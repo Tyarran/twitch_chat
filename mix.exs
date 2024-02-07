@@ -24,6 +24,7 @@ defmodule TwitchChat.MixProject do
   defp deps do
     [
       {:bandit, "~> 1.2"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:dotenv, "~> 3.0.0"},
       {:exirc, "~> 2.0"},

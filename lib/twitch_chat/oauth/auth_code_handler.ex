@@ -1,14 +1,21 @@
 defmodule TwitchChat.OAuth.AuthCodeHandler do
+  @moduledoc """
+  This module is responsible for handling the OAuth2 authorization code flow.
+  """
   use GenServer
 
   defmodule AuthCodePlug do
+    @moduledoc """
+      This module is a plug to handle Twitch auth code response
+    """
     import Plug.Conn
+    alias Plug.Conn.Query
     alias TwitchChat.OAuth.AuthCodeHandler
 
     def init(options), do: options
 
     def call(conn, _opts) do
-      query_params = Plug.Conn.Query.decode(conn.query_string)
+      query_params = Query.decode(conn.query_string)
       AuthCodeHandler.set_auth_code(query_params["code"])
 
       conn
@@ -20,19 +27,19 @@ defmodule TwitchChat.OAuth.AuthCodeHandler do
     end
   end
 
-  def start_link() do
+  def start_link do
     GenServer.start_link(__MODULE__, %{client: nil}, name: __MODULE__)
   end
 
   # Client
   @spec get_auth_code(String.t(), pos_integer()) :: {:ok, String.t()} | {:error, term()}
-  def get_auth_code(client_id, auth_server_port \\ 3000) do
+  def get_auth_code(client_id, auth_server_port \\ 3_000) do
     start_http_server(auth_server_port)
 
     GenServer.call(
       __MODULE__,
       {:get_auth_code, client_id, auth_server_port},
-      60_000
+      600_000
     )
   end
 
@@ -70,7 +77,7 @@ defmodule TwitchChat.OAuth.AuthCodeHandler do
     Process.register(pid, :http_server)
   end
 
-  defp stop_http_server() do
+  defp stop_http_server do
     pid = Process.whereis(:http_server)
 
     if pid do

@@ -7,5 +7,6 @@ pkgs.mkShell {
 
   shellHook = ''
     export MIX_ENV=dev
+    export ELIXIR_ERL_OPTIONS="+fnu"
   '';
 }

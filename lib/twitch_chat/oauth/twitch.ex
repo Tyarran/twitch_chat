@@ -1,4 +1,7 @@
 defmodule TwitchChat.OAuth.Twitch do
+  @moduledoc """
+  This module is a behaviour to handle Twitch OAuth
+  """
   alias TwitchChat.Auth.Credentials
   alias TwitchChat.OAuth.AuthCodeHandler
   alias TwitchChat.OAuth.Credentials
@@ -17,6 +20,45 @@ defmodule TwitchChat.OAuth.Twitch do
       {:expired_token, credentials} ->
         refresh_token(credentials)
     end
+  end
+
+  @impl true
+  @spec refresh_token(Credentials.t()) :: {:ok, Credentials.t()}
+  def refresh_token(credentials) do
+    {:ok, %{status_code: 200, body: body}} =
+      HTTPoison.request(%HTTPoison.Request{
+        method: :post,
+        url: "https://id.twitch.tv/oauth2/token",
+        headers: %{
+          "Content-Type" => "application/x-www-form-urlencoded"
+        },
+        params: %{
+          "client_id" => credentials.client_id,
+          "client_secret" => credentials.client_secret,
+          "grant_type" => "refresh_token",
+          "refresh_token" => credentials.refresh_token
+        }
+      })
+
+    new_token =
+      body
+      |> Jason.decode!()
+      |> Enum.filter(fn {key, _} -> key in ["access_token", "refresh_token", "expires_in"] end)
+      |> Map.new()
+
+    token_expiration = DateTime.utc_now() |> DateTime.add(new_token["expires_in"], :second)
+
+    new_credential = %Credentials{
+      access_token: new_token["access_token"],
+      refresh_token: new_token["refresh_token"],
+      token_expiration: token_expiration,
+      client_id: credentials.client_id,
+      client_secret: credentials.client_secret
+    }
+
+    save_to_disk(new_credential)
+
+    {:ok, new_credential}
   end
 
   defp new_credentials(client_id, client_secret) do
@@ -67,46 +109,7 @@ defmodule TwitchChat.OAuth.Twitch do
     end
   end
 
-  @impl true
-  @spec refresh_token(Credentials.t()) :: {:ok, Credentials.t()}
-  def refresh_token(credentials) do
-    {:ok, %{status_code: 200, body: body}} =
-      HTTPoison.request(%HTTPoison.Request{
-        method: :post,
-        url: "https://id.twitch.tv/oauth2/token",
-        headers: %{
-          "Content-Type" => "application/x-www-form-urlencoded"
-        },
-        params: %{
-          "client_id" => credentials.client_id,
-          "client_secret" => credentials.client_secret,
-          "grant_type" => "refresh_token",
-          "refresh_token" => credentials.refresh_token
-        }
-      })
-
-    new_token =
-      body
-      |> Jason.decode!()
-      |> Enum.filter(fn {key, _} -> key in ["access_token", "refresh_token", "expires_in"] end)
-      |> Map.new()
-
-    token_expiration = DateTime.utc_now() |> DateTime.add(new_token["expires_in"], :second)
-
-    new_credential = %Credentials{
-      access_token: new_token["access_token"],
-      refresh_token: new_token["refresh_token"],
-      token_expiration: token_expiration,
-      client_id: credentials.client_id,
-      client_secret: credentials.client_secret
-    }
-
-    save_to_disk(new_credential)
-
-    {:ok, new_credential}
-  end
-
-  @spec save_to_disk(%Credentials{}) :: {:ok, %Credentials{}} | {:error, term}
+  @spec save_to_disk(Credentials.t()) :: {:ok, Credentials.t()} | {:error, term}
   defp save_to_disk(credentials) do
     home = Path.expand("~")
     dirpath = Path.join([home, ".config", "twitch_chat"])
@@ -120,11 +123,11 @@ defmodule TwitchChat.OAuth.Twitch do
     end
   end
 
-  @spec load_from_disk() ::
-          {:ok, %Credentials{}}
+  @spec load_from_disk ::
+          {:ok, Credentials.t()}
           | {:error, :no_credentials}
           | {:expired_token, Credentials.t()}
-  defp load_from_disk() do
+  defp load_from_disk do
     path =
       ["~", ".config", "twitch_chat", "credentials.json"]
       |> Path.join()

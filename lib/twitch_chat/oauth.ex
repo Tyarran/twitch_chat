@@ -1,7 +1,13 @@
 defmodule TwitchChat.OAuth do
+  @moduledoc """
+  This module is a behaviour to handle OAuth
+  """
   alias TwitchChat.OAuth.Twitch
 
   defmodule Credentials do
+    @moduledoc """
+    This module is a struct to hold Twitch credentials
+    """
     @derive Jason.Encoder
     @enforce_keys [:access_token, :token_expiration, :refresh_token, :client_id, :client_secret]
     defstruct @enforce_keys
