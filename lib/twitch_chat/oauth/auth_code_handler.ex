@@ -27,7 +27,7 @@ defmodule TwitchChat.OAuth.AuthCodeHandler do
     end
   end
 
-  def start_link do
+  def start_link(_) do
     GenServer.start_link(__MODULE__, %{client: nil}, name: __MODULE__)
   end
 
@@ -98,7 +98,7 @@ defmodule TwitchChat.OAuth.AuthCodeHandler do
         "client_id" => client_id,
         "redirect_uri" => "http://localhost:" <> Integer.to_string(port),
         "response_type" => "code",
-        "scope" => "chat:read chat:edit"
+        "scope" => "chat:read"
       },
       options: [follow_redirect: true]
     })
