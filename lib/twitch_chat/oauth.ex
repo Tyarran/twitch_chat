@@ -22,7 +22,7 @@ defmodule TwitchChat.OAuth do
 
     def from_map(data) do
       data
-      |> Enum.map(fn {key, value} -> {String.to_atom(key), value} end)
+      |> Enum.map(fn {key, value} -> {String.to_existing_atom(key), value} end)
       |> then(&struct(Credentials, &1))
     end
   end

@@ -15,16 +15,6 @@ defmodule TwitchChat.TwitchHandler do
     )
   end
 
-  # def child_spec(opts) do
-  #   %{
-  #     id: __MODULE__,
-  #     start: {__MODULE__, :start_link, [opts]},
-  #     type: :worker,
-  #     restart: :permanent,
-  #     shutdown: 500
-  #   }
-  # end
-  #
   def init(state) do
     client_id = Application.fetch_env!(:twitch_chat, :client_id)
     client_secret = Application.fetch_env!(:twitch_chat, :client_secret)
@@ -225,6 +215,7 @@ defmodule TwitchChat.TwitchHandler do
   end
 
   def handle_info(_msg, state) do
+    # dbg(msg)
     debug("Received ExIRC.Message: ")
     {:noreply, state}
   end
