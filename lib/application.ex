@@ -7,7 +7,7 @@ defmodule TwitchChat.Application do
   alias TwitchChat.TwitchHandler
 
   def start(_type, _args) do
-    if Mix.env() != :test do
+    if Application.fetch_env!(:twitch_chat, :env) != :test do
       children = [
         Registry,
         AuthCodeHandler,
