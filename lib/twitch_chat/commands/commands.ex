@@ -69,4 +69,20 @@ defmodule TwitchChat.Commands do
             cmd: :globaluserstate
           }
   end
+
+  defmodule HosttargetCommand do
+    @moduledoc """
+      Twitch chat HOSTTARGET command
+    """
+    @enforce_keys [:hosting_channel, :channel, :number_of_viewers, :cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            hosting_channel: String.t(),
+            channel: String.t(),
+            number_of_viewers: integer(),
+            cmd: :hosttarget
+          }
+  end
 end
