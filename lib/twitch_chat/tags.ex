@@ -102,10 +102,10 @@ defmodule TwitchChat.Tags do
     defstruct @enforce_keys
 
     @type t :: %__MODULE__{
-            ban_duration: String.t(),
-            room_id: String.t(),
-            target_user_id: String.t(),
-            tmi_sent_ts: String.t()
+            ban_duration: String.t() | nil,
+            room_id: String.t() | nil,
+            target_user_id: String.t() | nil,
+            tmi_sent_ts: String.t() | nil
           }
 
     def build(%{} = data) do
@@ -113,6 +113,29 @@ defmodule TwitchChat.Tags do
         ban_duration: data["ban-duration"],
         room_id: data["room-id"],
         target_user_id: data["target-user-id"],
+        tmi_sent_ts: data["tmi-sent-ts"]
+      }
+    end
+  end
+
+  defmodule ClearmsgTags do
+    @moduledoc """
+      Twitch chat CLEARMSG tags
+    """
+    @enforce_keys [:login, :room_id, :target_msg_id, :tmi_sent_ts]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            login: String.t() | nil,
+            room_id: String.t() | nil,
+            target_msg_id: String.t() | nil,
+            tmi_sent_ts: String.t() | nil
+          }
+    def build(%{} = data) do
+      %__MODULE__{
+        login: data["login"],
+        room_id: data["room-id"],
+        target_msg_id: data["target-msg-id"],
         tmi_sent_ts: data["tmi-sent-ts"]
       }
     end
