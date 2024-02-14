@@ -147,4 +147,20 @@ defmodule TwitchChat.Commands do
             cmd: :Usernotice
           }
   end
+
+  defmodule UserstateCommand do
+    @moduledoc """
+      Twitch chat USERSTATE command
+    """
+    alias TwitchChat.Tags.UserstateTags
+    @enforce_keys [:tags, :channel, :cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            tags: UserstateTags.t(),
+            channel: String.t(),
+            cmd: :userstate
+          }
+  end
 end

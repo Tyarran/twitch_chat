@@ -308,4 +308,51 @@ defmodule TwitchChat.Tags do
       }
     end
   end
+
+  defmodule UserstateTags do
+    @moduledoc """
+      Twitch chat USERSTATE tags
+    """
+    @enforce_keys [
+      :badge_info,
+      :badges,
+      :color,
+      :display_name,
+      :emote_sets,
+      :id,
+      :mod,
+      :subscriber,
+      :turbo,
+      :user_type
+    ]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            badge_info: String.t() | nil,
+            badges: String.t() | nil,
+            color: String.t() | nil,
+            display_name: String.t() | nil,
+            emote_sets: String.t() | nil,
+            id: String.t() | nil,
+            mod: String.t() | nil,
+            subscriber: String.t() | nil,
+            turbo: String.t() | nil,
+            user_type: String.t() | nil
+          }
+
+    def build(%{} = data) do
+      %__MODULE__{
+        badge_info: data["badge-info"],
+        badges: data["badges"],
+        color: data["color"],
+        display_name: data["display-name"],
+        emote_sets: data["emote-sets"],
+        id: data["id"],
+        mod: data["mod"],
+        subscriber: data["subscriber"],
+        turbo: data["turbo"],
+        user_type: data["user-type"]
+      }
+    end
+  end
 end
