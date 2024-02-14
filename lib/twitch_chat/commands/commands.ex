@@ -101,4 +101,20 @@ defmodule TwitchChat.Commands do
             cmd: :notice
           }
   end
+
+  defmodule RoomstateCommand do
+    @moduledoc """
+      Twitch chat ROOMSTATE command
+    """
+    alias TwitchChat.Tags.RoomstateTags
+    @enforce_keys [:tags, :channel, :cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            tags: RoomstateTags.t(),
+            channel: String.t(),
+            cmd: :roomstate
+          }
+  end
 end

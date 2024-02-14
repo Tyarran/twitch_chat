@@ -200,4 +200,32 @@ defmodule TwitchChat.Tags do
       }
     end
   end
+
+  defmodule RoomstateTags do
+    @moduledoc """
+      Twitch chat ROOMSTATE tags
+    """
+    @enforce_keys [:emote_only, :followers_only, :r9k, :room_id, :slow, :subs_only]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            emote_only: String.t() | nil,
+            followers_only: String.t() | nil,
+            r9k: String.t() | nil,
+            room_id: String.t() | nil,
+            slow: String.t() | nil,
+            subs_only: String.t() | nil
+          }
+
+    def build(%{} = data) do
+      %__MODULE__{
+        emote_only: data["emote-only"],
+        followers_only: data["followers-only"],
+        r9k: data["r9k"],
+        room_id: data["room-id"],
+        slow: data["slow"],
+        subs_only: data["subs-only"]
+      }
+    end
+  end
 end
