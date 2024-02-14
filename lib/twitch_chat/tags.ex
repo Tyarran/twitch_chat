@@ -140,4 +140,44 @@ defmodule TwitchChat.Tags do
       }
     end
   end
+
+  defmodule GlobaluserstateTags do
+    @moduledoc """
+      Twitch chat GLOBALUSERSTATE tags
+    """
+    @enforce_keys [
+      :badge_info,
+      :badges,
+      :color,
+      :display_name,
+      :emote_sets,
+      :turbo,
+      :user_id,
+      :user_type
+    ]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            badge_info: String.t() | nil,
+            badges: String.t() | nil,
+            color: String.t() | nil,
+            display_name: String.t() | nil,
+            emote_sets: String.t() | nil,
+            turbo: String.t() | nil,
+            user_id: String.t() | nil,
+            user_type: String.t() | nil
+          }
+    def build(%{} = data) do
+      %__MODULE__{
+        badge_info: data["badge-info"],
+        badges: data["badges"],
+        color: data["color"],
+        display_name: data["display-name"],
+        emote_sets: data["emote-sets"],
+        turbo: data["turbo"],
+        user_id: data["user-id"],
+        user_type: data["user-type"]
+      }
+    end
+  end
 end

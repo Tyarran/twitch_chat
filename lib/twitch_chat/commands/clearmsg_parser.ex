@@ -1,4 +1,7 @@
 defmodule TwitchChat.Commands.ClearmsgParser do
+  @moduledoc """
+    Twitch chat CLEARMSG command
+  """
   alias TwitchChat.Commands.ClearmsgCommand
   alias TwitchChat.Tags.ClearmsgTags
 

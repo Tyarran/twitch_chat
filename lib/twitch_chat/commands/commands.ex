@@ -38,7 +38,7 @@ defmodule TwitchChat.Commands do
 
   defmodule ClearmsgCommand do
     @moduledoc """
-      Twitch chat clearchat command
+      Twitch chat clearmsg command
     """
     alias TwitchChat.Tags.ClearmsgTags
 
@@ -51,6 +51,22 @@ defmodule TwitchChat.Commands do
             channel: String.t(),
             message: String.t(),
             cmd: :clearmsg
+          }
+  end
+
+  defmodule GlobaluserstateCommand do
+    @moduledoc """
+      Twitch chat GLOBALUSERSTATE command
+    """
+    alias TwitchChat.Tags.GlobaluserstateTags
+
+    @enforce_keys [:tags, :cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            tags: GlobaluserstateTags.t(),
+            cmd: :globaluserstate
           }
   end
 end

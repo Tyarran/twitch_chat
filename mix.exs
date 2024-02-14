@@ -12,6 +12,10 @@ defmodule TwitchChat.MixProject do
     ]
   end
 
+  def cli do
+    [preferred_envs: [test: :test, quality: :test]]
+  end
+
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
@@ -26,7 +30,7 @@ defmodule TwitchChat.MixProject do
       quality: [
         "credo --strict",
         "sobelow -i XSS.Raw,Traversal --verbose --exit Low",
-        # "dialyzer",
+        "dialyzer",
         "test"
       ]
     ]
