@@ -117,4 +117,17 @@ defmodule TwitchChat.Commands do
             cmd: :roomstate
           }
   end
+
+  defmodule ReconnectCommand do
+    @moduledoc """
+      Twitch chat RECONNECT command
+    """
+    @enforce_keys [:cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            cmd: :reconnect
+          }
+  end
 end
