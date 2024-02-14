@@ -180,4 +180,24 @@ defmodule TwitchChat.Tags do
       }
     end
   end
+
+  defmodule NoticeTags do
+    @moduledoc """
+      Twitch chat NOTICE tags
+    """
+    @enforce_keys [:msg_id, :target_user_id]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            msg_id: String.t(),
+            target_user_id: String.t() | nil
+          }
+
+    def build(%{} = data) do
+      %__MODULE__{
+        msg_id: data["msg-id"],
+        target_user_id: data["target-user-id"]
+      }
+    end
+  end
 end

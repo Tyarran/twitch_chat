@@ -85,4 +85,20 @@ defmodule TwitchChat.Commands do
             cmd: :hosttarget
           }
   end
+
+  defmodule NoticeCommand do
+    @moduledoc """
+      Twitch chat NOTICE command
+    """
+    @enforce_keys [:tags, :channel, :message, :cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            tags: TwitchChat.Tags.NoticeTags.t(),
+            channel: String.t(),
+            message: String.t(),
+            cmd: :notice
+          }
+  end
 end
