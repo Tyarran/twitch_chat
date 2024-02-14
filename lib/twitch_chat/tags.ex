@@ -228,4 +228,84 @@ defmodule TwitchChat.Tags do
       }
     end
   end
+
+  defmodule UsernoticeTags do
+    @moduledoc """
+      Twitch chat ROOMSTATE tags
+    """
+    @enforce_keys [
+      :badge_info,
+      :badges,
+      :color,
+      :display_name,
+      :emotes,
+      :id,
+      :login,
+      :mod,
+      :msg_id,
+      :msg_param_cumulative_months,
+      :msg_param_streak_months,
+      :msg_param_should_share_streak,
+      :msg_param_sub_plan,
+      :msg_param_sub_plan_name,
+      :room_id,
+      :subscriber,
+      :system_msg,
+      :tmi_sent_ts,
+      :turbo,
+      :user_id,
+      :user_type
+    ]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            badge_info: String.t() | nil,
+            badges: String.t() | nil,
+            color: String.t() | nil,
+            display_name: String.t() | nil,
+            emotes: String.t() | nil,
+            id: String.t() | nil,
+            login: String.t() | nil,
+            mod: String.t() | nil,
+            msg_id: String.t() | nil,
+            msg_param_cumulative_months: String.t() | nil,
+            msg_param_streak_months: String.t() | nil,
+            msg_param_should_share_streak: String.t() | nil,
+            msg_param_sub_plan: String.t() | nil,
+            msg_param_sub_plan_name: String.t() | nil,
+            room_id: String.t() | nil,
+            subscriber: String.t() | nil,
+            system_msg: String.t() | nil,
+            tmi_sent_ts: String.t() | nil,
+            turbo: String.t() | nil,
+            user_id: String.t() | nil,
+            user_type: String.t() | nil
+          }
+
+    def build(%{} = data) do
+      %__MODULE__{
+        badge_info: data["badge-info"],
+        badges: data["badges"],
+        color: data["color"],
+        display_name: data["display-name"],
+        emotes: data["emotes"],
+        id: data["id"],
+        login: data["login"],
+        mod: data["mod"],
+        msg_id: data["msg-id"],
+        msg_param_cumulative_months: data["msg-param-cumulative-months"],
+        msg_param_streak_months: data["msg-param-streak-months"],
+        msg_param_should_share_streak: data["msg-param-should-share-streak"],
+        msg_param_sub_plan: data["msg-param-sub-plan"],
+        msg_param_sub_plan_name: data["msg-param-sub-plan-name"],
+        room_id: data["room-id"],
+        subscriber: data["subscriber"],
+        system_msg: data["system-msg"],
+        tmi_sent_ts: data["tmi-sent-ts"],
+        turbo: data["turbo"],
+        user_id: data["user-id"],
+        user_type: data["user-type"]
+      }
+    end
+  end
 end

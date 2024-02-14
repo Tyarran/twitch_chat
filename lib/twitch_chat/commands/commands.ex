@@ -130,4 +130,21 @@ defmodule TwitchChat.Commands do
             cmd: :reconnect
           }
   end
+
+  defmodule UsernoticeCommand do
+    @moduledoc """
+      Twitch chat USERNOTICE command
+    """
+    alias TwitchChat.Tags.UsernoticeTags
+    @enforce_keys [:tags, :channel, :message, :cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            tags: UsernoticeTags.t(),
+            channel: String.t(),
+            message: String.t(),
+            cmd: :Usernotice
+          }
+  end
 end
