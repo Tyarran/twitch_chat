@@ -163,4 +163,22 @@ defmodule TwitchChat.Commands do
             cmd: :userstate
           }
   end
+
+  defmodule WhisperCommand do
+    @moduledoc """
+      Twitch chat WHISPER command
+    """
+    alias TwitchChat.Tags.WhisperTags
+    @enforce_keys [:tags, :from_user, :to_user, :message, :cmd]
+
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            tags: WhisperTags.t(),
+            from_user: String.t(),
+            to_user: String.t(),
+            message: String.t(),
+            cmd: :whisper
+          }
+  end
 end

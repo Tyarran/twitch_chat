@@ -355,4 +355,48 @@ defmodule TwitchChat.Tags do
       }
     end
   end
+
+  defmodule WhisperTags do
+    @moduledoc """
+      Twitch chat WHISPER tags
+    """
+    @enforce_keys [
+      :badges,
+      :color,
+      :display_name,
+      :emotes,
+      :message_id,
+      :thread_id,
+      :turbo,
+      :user_id,
+      :user_type
+    ]
+    defstruct @enforce_keys
+
+    @type t :: %__MODULE__{
+            badges: String.t() | nil,
+            color: String.t() | nil,
+            display_name: String.t() | nil,
+            emotes: String.t() | nil,
+            message_id: String.t() | nil,
+            thread_id: String.t() | nil,
+            turbo: String.t() | nil,
+            user_id: String.t() | nil,
+            user_type: String.t() | nil
+          }
+
+    def build(%{} = data) do
+      %__MODULE__{
+        badges: data["badges"],
+        color: data["color"],
+        display_name: data["display-name"],
+        emotes: data["emotes"],
+        message_id: data["message-id"],
+        thread_id: data["thread-id"],
+        turbo: data["turbo"],
+        user_id: data["user-id"],
+        user_type: data["user-type"]
+      }
+    end
+  end
 end
