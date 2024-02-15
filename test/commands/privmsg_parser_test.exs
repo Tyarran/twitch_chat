@@ -14,7 +14,7 @@ defmodule PrivmsgParserTest do
       ctcp: false,
       cmd:
         "@badge-info=;badges=broadcaster/1,premium/1;client-nonce=0ee90d941b4964a2fdbcc5f34af0aef8;color=;display-name=tyarran;emotes=;first-msg=0;flags=;id=de217260-60f0-4ce0-86fb-8799c59ccec1;mod=0;returning-chatter=0;room-id=175715982;subscriber=0;tmi-sent-ts=1707758140401;turbo=0;user-id=175715982;user-type=",
-      args: ["tyarran!tyarran@tyarran.tmi.twitch.tv PRIVMSG #tyarran :test"]
+      args: ["tyarran!tyarran@tyarran.tmi.twitch.tv PRIVMSG #tyarran :Hello world!"]
     }
 
     result = PrivmsgParser.parse(message)
@@ -49,7 +49,7 @@ defmodule PrivmsgParserTest do
                vip: nil
              },
              channel: "#tyarran",
-             message: "test",
+             message: "Hello world!",
              nick: "tyarran",
              cmd: :privmsg
            }

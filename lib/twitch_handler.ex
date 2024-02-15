@@ -5,12 +5,20 @@ defmodule TwitchChat.TwitchHandler do
 
   use GenServer
 
+  alias TwitchChat.Commands.ClearchatCommand
+  alias TwitchChat.Commands.ClearchatParser
+  alias TwitchChat.Commands.PrivmsgCommand
+  alias TwitchChat.Commands.PrivmsgParser
+  alias TwitchChat.Commands.UserstateCommand
+  alias TwitchChat.Commands.UserstateParser
   alias TwitchChat.Registry, as: TCRegistry
+
+  @ignored_commands ["002", "003", "004", "366", "375", "372", "376", "CAP"]
 
   def start_link(nick) do
     GenServer.start_link(
       __MODULE__,
-      %{client: nil, pending_messages: [], nick: nick},
+      %{bot: nil, client: nil, host: nil, port: nil, pending_messages: [], nick: nick},
       name: __MODULE__
     )
   end
@@ -26,15 +34,43 @@ defmodule TwitchChat.TwitchHandler do
     pass = "oauth:#{credentials.access_token}"
     TCRegistry.register(:pass, pass)
 
-    # Connection
     {:ok, client} = ExIRC.start_link!()
-    ExIRC.Client.add_handler(client, self())
-    :ok = ExIRC.Client.connect_ssl!(client, host, port)
-    {:ok, %{state | :client => client}}
+    {:ok, %{state | :client => client, port: port, host: host}}
+  end
+
+  def connect do
+    GenServer.cast(__MODULE__, :connect)
+  end
+
+  def add_bot(bot) do
+    GenServer.cast(__MODULE__, {:add_bot, bot})
   end
 
   def msg(cmd, channel, message) do
     GenServer.cast(__MODULE__, {:msg, cmd, channel, message})
+  end
+
+  def logon(pass, nick) do
+    GenServer.cast(__MODULE__, {:logon, pass, nick})
+  end
+
+  def join(channel) do
+    GenServer.cast(__MODULE__, {:join, channel})
+  end
+
+  def handle_cast(:connect, state) do
+    ExIRC.Client.add_handler(state.client, self())
+    :ok = ExIRC.Client.connect_ssl!(state.client, state.host, state.port)
+    {:noreply, state}
+  end
+
+  def handle_cast({:add_bot, bot}, state) do
+    {:noreply, %{state | :bot => bot}}
+  end
+
+  def handle_cast({:join, channel}, state) do
+    ExIRC.Client.join(state.client, channel)
+    {:noreply, state}
   end
 
   def handle_cast({:msg, cmd, channel, message}, state) do
@@ -48,43 +84,16 @@ defmodule TwitchChat.TwitchHandler do
     end
   end
 
-  def handle_cast({:received, %{command: :privmsg} = _msg}, state) do
-    debug("Received PRIVMSG")
-    {:noreply, state}
-  end
-
-  def handle_info({:connected, server, port}, state) do
-    debug("Connected to #{server}:#{port}")
-    pass = TCRegistry.get(:pass)
-    ExIRC.Client.logon(state.client, pass, state.nick, state.nick, state.nick)
-    {:noreply, state}
-  end
-
-  def handle_info(:logged_in, state) do
-    debug("Logged in to server")
-    ExIRC.Client.join(state.client, "#tyarran")
-    {:noreply, state}
-  end
-
-  def handle_info({:login_failed, :nick_in_use}, state) do
-    debug("Login failed, nickname in use")
-    {:noreply, state}
-  end
-
-  def handle_info(:disconnected, state) do
-    debug("Disconnected from server")
+  def handle_cast({:logon, pass, nick}, state) do
+    ExIRC.Client.logon(state.client, pass, nick, nick, nick)
     {:noreply, state}
   end
 
   def handle_info({:joined, channel}, state) do
-    debug("Joined channel #{channel}")
-
     ExIRC.Client.cmd(
       state.client,
       "CAP REQ :twitch.tv/commands twitch.tv/tags twitch.tv/membership"
     )
-
-    # Process.sleep(1000)
 
     state.pending_messages
     |> Enum.reverse()
@@ -92,148 +101,62 @@ defmodule TwitchChat.TwitchHandler do
       ExIRC.Client.msg(state.client, cmd, channel, message)
     end)
 
-    {:noreply, state}
-  end
-
-  def handle_info({:joined, channel, user}, state) do
-    debug("#{user.nick} joined #{channel}")
-    {:noreply, state}
-  end
-
-  def handle_info({:topic_changed, channel, topic}, state) do
-    debug("#{channel} topic changed to #{topic}")
-    {:noreply, state}
-  end
-
-  def handle_info({:nick_changed, nick}, state) do
-    debug("We changed our nick to #{nick}")
-    {:noreply, state}
-  end
-
-  def handle_info({:nick_changed, old_nick, new_nick}, state) do
-    debug("#{old_nick} changed their nick to #{new_nick}")
-    {:noreply, state}
-  end
-
-  def handle_info({:parted, channel}, state) do
-    debug("We left #{channel}")
-    {:noreply, state}
-  end
-
-  def handle_info({:parted, channel, sender}, state) do
-    nick = sender.nick
-    debug("#{nick} left #{channel}")
-    {:noreply, state}
-  end
-
-  def handle_info({:invited, sender, channel}, state) do
-    by = sender.nick
-    debug("#{by} invited us to #{channel}")
-    {:noreply, state}
-  end
-
-  def handle_info({:kicked, sender, channel}, state) do
-    by = sender.nick
-    debug("We were kicked from #{channel} by #{by}")
-    {:noreply, state}
-  end
-
-  def handle_info({:kicked, nick, sender, channel}, state) do
-    by = sender.nick
-    debug("#{nick} was kicked from #{channel} by #{by}")
-    {:noreply, state}
-  end
-
-  def handle_info({:received, message, sender}, state) do
-    from = sender.nick
-    debug("#{from} sent us a private message: #{message}")
-    {:noreply, state}
-  end
-
-  def handle_info({:received, message, sender, channel}, state) do
-    from = sender.nick
-    debug("#{from} sent a message to #{channel}: #{message}")
+    broadcast({:joined, channel}, state)
 
     {:noreply, state}
   end
 
-  def handle_info({:mentioned, message, sender, channel}, state) do
-    from = sender.nick
-    debug("#{from} mentioned us in #{channel}: #{message}")
+  def handle_info({:unrecognized, _, %ExIRC.Message{args: [args]} = msg}, state) do
+    [_, cmdname | _rest] = String.split(args)
+
+    case cmdname do
+      "PRIVMSG" ->
+        msg
+        |> PrivmsgParser.parse()
+        |> handle_info(state)
+
+      "USERSTATE" ->
+        msg
+        |> UserstateParser.parse()
+        |> handle_info(state)
+
+      "CLEARCHAT" ->
+        msg
+        |> ClearchatParser.parse()
+        |> handle_info(state)
+    end
+
     {:noreply, state}
   end
 
-  def handle_info({:me, message, sender, channel}, state) do
-    from = sender.nick
-    debug("* #{from} #{message} in #{channel}")
+  def handle_info(%PrivmsgCommand{message: _message} = msg, state) do
+    broadcast({:received, msg}, state)
     {:noreply, state}
   end
 
-  # This is an example of how you can manually catch commands if ExIRC.Client doesn't send a specific message for it
-  def handle_info(%ExIRC.Message{nick: from, cmd: "PRIVMSG", args: ["testnick", msg]}, state) do
-    debug("Received a private message from #{from}: #{msg}")
+  def handle_info(%UserstateCommand{channel: _channel} = msg, state) do
+    broadcast({:received, msg}, state)
     {:noreply, state}
   end
 
-  def handle_info(%ExIRC.Message{nick: from, cmd: "PRIVMSG", args: [to, msg]}, state) do
-    debug("Received a message in #{to} from #{from}: #{msg}")
+  def handle_info(%ClearchatCommand{channel: _channel, user: _user} = msg, state) do
+    broadcast({:received, msg}, state)
     {:noreply, state}
   end
 
-  # Catch-all for messages you don't care about
-  def handle_info(
-        {:unrecognized, "@badge-info=" <> _rest = _badge_infos,
-         %ExIRC.Message{cmd: _cmd, args: [arg]} = _message},
-        state
-      ) do
-    [user, command, channel, msg] = String.split(arg)
+  def handle_info({:unrecognized, command, _}, state) when command in @ignored_commands,
+    do: {:noreply, state}
 
-    msg =
-      %{
-        user: parse_user(user),
-        command: parse_command(command),
-        channel: channel,
-        msg: parse_message(msg)
-      }
-
-    GenServer.cast(__MODULE__, {:received, msg})
-
-    # debug("Received ExIRC.Message:")
-    #
-    #
-    # cmd
-    # |> String.split(";")
-    # |> Enum.map(fn item ->
-    #   item
-    #   |> String.split("=")
-    #   |> List.to_tuple()
-    # end)
-    # |> Map.new()
-    # |> BadgeInfo.from_map()
-    #
+  def handle_info(args, state) do
+    broadcast(args, state)
     {:noreply, state}
   end
 
-  def handle_info(_msg, state) do
-    # dbg(msg)
-    debug("Received ExIRC.Message: ")
-    {:noreply, state}
-  end
-
-  # def parse_message() do
-  # end
-
-  defp parse_command("PRIVMSG"), do: :privmsg
-
-  defp parse_message(":" <> msg), do: msg
-
-  defp parse_user(raw_user) do
-    raw_user
-    |> String.split("!")
-    |> List.first()
-  end
-
-  defp debug(msg) do
-    IO.puts(IO.ANSI.yellow() <> msg <> IO.ANSI.reset())
+  defp broadcast(data, state) do
+    if state.bot do
+      Process.send(state.bot, data, [])
+    else
+      :ok
+    end
   end
 end

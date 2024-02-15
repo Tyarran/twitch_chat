@@ -7,12 +7,12 @@ defmodule TwitchChat.Commands.PrivmsgParser do
   alias TwitchChat.Tags.PrivmsgTags
 
   def parse(%ExIRC.Message{cmd: badge_info, args: [args]}) do
-    [user, cmd, channel, msg] = String.split(args)
+    [user, cmd, channel | words] = String.split(args)
 
     %Commands.PrivmsgCommand{
       tags: parse_badge_info(badge_info),
       channel: channel,
-      message: parse_message(msg),
+      message: parse_message(Enum.join(words, " ")),
       nick: parse_nick(user),
       cmd: parse_value("cmd", cmd)
     }

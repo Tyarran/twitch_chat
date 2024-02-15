@@ -4,14 +4,15 @@ defmodule TwitchChat.Application do
   """
   alias TwitchChat.OAuth.AuthCodeHandler
   alias TwitchChat.Registry
-  alias TwitchChat.TwitchHandler
+  # alias TwitchChat.TwitchHandler
 
   def start(_type, _args) do
     if Application.fetch_env!(:twitch_chat, :env) != :test do
       children = [
         Registry,
         AuthCodeHandler,
-        {TwitchHandler, Application.fetch_env!(:twitch_chat, :nick)}
+        {TwitchChat.ExampleBot, "tyarran"}
+        # {TwitchHandler, Application.fetch_env!(:twitch_chat, :nick)}
       ]
 
       opts = [strategy: :one_for_one, name: TwitchChat.Supervisor]
