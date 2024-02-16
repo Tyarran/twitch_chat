@@ -5,21 +5,6 @@ defmodule TwitchChat.Message do
 
   alias TwitchChat.Tags
 
-  defmodule Sender do
-    @moduledoc """
-      TwitchChat.Message.Sender
-    """
-
-    @enforce_keys [:name, :host, :nick]
-    defstruct @enforce_keys
-
-    @type t :: %__MODULE__{
-            name: String.t(),
-            host: String.t(),
-            nick: String.t()
-          }
-  end
-
   @type tags ::
           Tags.NoticeTags.t()
           | Tags.PrivmsgTags.t()
@@ -43,13 +28,14 @@ defmodule TwitchChat.Message do
           | :userstate
           | :whisper
 
-  @enforce_keys [:tags, :cmd, :args, :sender]
+  @enforce_keys [:tags, :cmd, :args, :host, :nick]
   defstruct @enforce_keys
 
   @type t :: %__MODULE__{
-          tags: tags(),
-          cmd: command(),
           args: list(String.t()),
-          sender: Sender.t()
+          cmd: command(),
+          host: String.t(),
+          nick: String.t(),
+          tags: tags()
         }
 end

@@ -55,14 +55,14 @@ defmodule TwitchChat.Tags do
             reply_thread_parent_user_login: String.t() | nil,
             room_id: String.t() | nil,
             subscriber: String.t() | nil,
-            tmi_sent_ts: String.t() | nil,
+            tmi_sent_ts: DateTime.t() | nil,
             turbo: String.t() | nil,
             user_id: String.t() | nil,
             user_type: String.t() | nil,
             vip: String.t()
           }
 
-    def build(%{} = data) do
+    def new(%{} = data) do
       %__MODULE__{
         badge_info: data["badge-info"],
         badges: data["badges"],
@@ -108,7 +108,7 @@ defmodule TwitchChat.Tags do
             tmi_sent_ts: String.t() | nil
           }
 
-    def build(%{} = data) do
+    def new(%{} = data) do
       %__MODULE__{
         ban_duration: data["ban-duration"],
         room_id: data["room-id"],
@@ -131,7 +131,8 @@ defmodule TwitchChat.Tags do
             target_msg_id: String.t() | nil,
             tmi_sent_ts: String.t() | nil
           }
-    def build(%{} = data) do
+
+    def new(%{} = data) do
       %__MODULE__{
         login: data["login"],
         room_id: data["room-id"],
@@ -167,7 +168,8 @@ defmodule TwitchChat.Tags do
             user_id: String.t() | nil,
             user_type: String.t() | nil
           }
-    def build(%{} = data) do
+
+    def new(%{} = data) do
       %__MODULE__{
         badge_info: data["badge-info"],
         badges: data["badges"],
@@ -193,7 +195,7 @@ defmodule TwitchChat.Tags do
             target_user_id: String.t() | nil
           }
 
-    def build(%{} = data) do
+    def new(%{} = data) do
       %__MODULE__{
         msg_id: data["msg-id"],
         target_user_id: data["target-user-id"]
@@ -217,7 +219,7 @@ defmodule TwitchChat.Tags do
             subs_only: String.t() | nil
           }
 
-    def build(%{} = data) do
+    def new(%{} = data) do
       %__MODULE__{
         emote_only: data["emote-only"],
         followers_only: data["followers-only"],
@@ -282,7 +284,7 @@ defmodule TwitchChat.Tags do
             user_type: String.t() | nil
           }
 
-    def build(%{} = data) do
+    def new(%{} = data) do
       %__MODULE__{
         badge_info: data["badge-info"],
         badges: data["badges"],
@@ -340,7 +342,7 @@ defmodule TwitchChat.Tags do
             user_type: String.t() | nil
           }
 
-    def build(%{} = data) do
+    def new(%{} = data) do
       %__MODULE__{
         badge_info: data["badge-info"],
         badges: data["badges"],
@@ -385,7 +387,7 @@ defmodule TwitchChat.Tags do
             user_type: String.t() | nil
           }
 
-    def build(%{} = data) do
+    def new(%{} = data) do
       %__MODULE__{
         badges: data["badges"],
         color: data["color"],

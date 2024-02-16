@@ -5,12 +5,6 @@ defmodule TwitchChat.TwitchHandler do
 
   use GenServer
 
-  alias TwitchChat.Commands.ClearchatCommand
-  alias TwitchChat.Commands.ClearchatParser
-  alias TwitchChat.Commands.PrivmsgCommand
-  alias TwitchChat.Commands.PrivmsgParser
-  alias TwitchChat.Commands.UserstateCommand
-  alias TwitchChat.Commands.UserstateParser
   alias TwitchChat.Registry, as: TCRegistry
 
   @ignored_commands ["002", "003", "004", "366", "375", "372", "376", "CAP"]
@@ -106,41 +100,9 @@ defmodule TwitchChat.TwitchHandler do
     {:noreply, state}
   end
 
-  def handle_info({:unrecognized, _, %ExIRC.Message{args: [args]} = msg}, state) do
-    [_, cmdname | _rest] = String.split(args)
+  def handle_info({:unrecognized, _, %ExIRC.Message{args: [args]} = _msg}, state) do
+    [_, _cmdname | _rest] = String.split(args)
 
-    case cmdname do
-      "PRIVMSG" ->
-        msg
-        |> PrivmsgParser.parse()
-        |> handle_info(state)
-
-      "USERSTATE" ->
-        msg
-        |> UserstateParser.parse()
-        |> handle_info(state)
-
-      "CLEARCHAT" ->
-        msg
-        |> ClearchatParser.parse()
-        |> handle_info(state)
-    end
-
-    {:noreply, state}
-  end
-
-  def handle_info(%PrivmsgCommand{message: _message} = msg, state) do
-    broadcast({:received, msg}, state)
-    {:noreply, state}
-  end
-
-  def handle_info(%UserstateCommand{channel: _channel} = msg, state) do
-    broadcast({:received, msg}, state)
-    {:noreply, state}
-  end
-
-  def handle_info(%ClearchatCommand{channel: _channel, user: _user} = msg, state) do
-    broadcast({:received, msg}, state)
     {:noreply, state}
   end
 

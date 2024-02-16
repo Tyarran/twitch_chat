@@ -46,8 +46,6 @@ defmodule TwitchChat.MixProject do
       {:httpoison, "~> 2.0"},
       {:jason, "~> 1.4"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
 end
