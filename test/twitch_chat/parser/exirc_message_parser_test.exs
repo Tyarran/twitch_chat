@@ -1,9 +1,9 @@
-defmodule TwitchChat.MessageParserTest do
+defmodule TwitchChat.MessageParser.MessageParserTest do
   use ExUnit.Case, async: true
 
   alias TwitchChat.Args
   alias TwitchChat.Message
-  alias TwitchChat.MessageParser
+  alias TwitchChat.MessageParser.ExIRCMessageParser
   alias TwitchChat.Tags
 
   test "Parse a PRIVMSG message" do
@@ -18,7 +18,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tyarran!tyarran@tyarran.tmi.twitch.tv PRIVMSG #tyarran :Hello world!"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -72,7 +72,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv CLEARCHAT #dallas :ronni"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -102,7 +102,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv CLEARMSG #bar :what a great day"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -135,7 +135,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv GLOBALUSERSTATE"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -168,7 +168,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv HOSTTARGET #abc :xyz 10"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -196,7 +196,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv HOSTTARGET #abc 10"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -224,7 +224,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv RECONNECT"]
     }
 
-    result = MessageParser.parse(irc_message)
+    result = ExIRCMessageParser.parse(irc_message)
 
     assert result ==
              {:ok,
@@ -248,7 +248,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv ROOMSTATE #bar"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -282,7 +282,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["petsgomoo!petsgomoo@petsgomoo.tmi.twitch.tv WHISPER foo :hello world!"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -321,7 +321,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv USERSTATE #dallas"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -359,7 +359,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv USERNOTICE #dallas :Great stream -- keep it up!"]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -408,7 +408,7 @@ defmodule TwitchChat.MessageParserTest do
       args: ["tmi.twitch.tv NOTICE #bar :The message from foo is now deleted."]
     }
 
-    result = MessageParser.parse(exirc_message)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -425,5 +425,21 @@ defmodule TwitchChat.MessageParserTest do
                 nick: nil,
                 cmd: :notice
               }}
+  end
+
+  test "try to parse invalid message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "@msg-id=whisper_restricted;target-user-id=12345678",
+      args: ["tmi.twitch.tv INVALIDMESSAGE #bar :This is an invalid message."]
+    }
+
+    result = ExIRCMessageParser.parse(exirc_message)
+
+    assert result == {:error, :invalid_message}
   end
 end

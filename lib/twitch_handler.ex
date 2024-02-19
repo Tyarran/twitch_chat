@@ -2,42 +2,52 @@ defmodule TwitchChat.TwitchHandler do
   @moduledoc """
     ExIRC client handler for Twitch chat
   """
+  alias TwitchChat.MessageParser
+  alias TwitchChat.TwitchClient
 
   use GenServer
 
-  alias TwitchChat.Registry, as: TCRegistry
+  require Logger
+
+  # alias TwitchChat.Registry, as: TCRegistry
 
   @ignored_commands ["002", "003", "004", "366", "375", "372", "376", "CAP"]
 
-  def start_link(nick) do
+  def start_link do
     GenServer.start_link(
       __MODULE__,
-      %{bot: nil, client: nil, host: nil, port: nil, pending_messages: [], nick: nick},
+      %{handlers: [], client: nil, pending_messages: []},
       name: __MODULE__
     )
   end
 
   def init(state) do
-    client_id = Application.fetch_env!(:twitch_chat, :client_id)
-    client_secret = Application.fetch_env!(:twitch_chat, :client_secret)
-    host = Application.fetch_env!(:twitch_chat, :host)
-    port = Application.fetch_env!(:twitch_chat, :port)
-
-    # OAuth
-    {:ok, credentials} = TwitchChat.OAuth.get_credentials(client_id, client_secret)
-    pass = "oauth:#{credentials.access_token}"
-    TCRegistry.register(:pass, pass)
-
-    {:ok, client} = ExIRC.start_link!()
-    {:ok, %{state | :client => client, port: port, host: host}}
+    {:ok, client} = TwitchClient.run()
+    # {:ok, client} = ExIRC.start_link!()
+    {:ok, %{state | :client => client}}
   end
+
+  # def init(state) do
+  #   client_id = Application.fetch_env!(:twitch_chat, :client_id)
+  #   client_secret = Application.fetch_env!(:twitch_chat, :client_secret)
+  #   host = Application.fetch_env!(:twitch_chat, :host)
+  #   port = Application.fetch_env!(:twitch_chat, :port)
+  #
+  #   # OAuth
+  #   {:ok, credentials} = TwitchChat.OAuth.get_credentials(client_id, client_secret)
+  #   pass = "oauth:#{credentials.access_token}"
+  #   TCRegistry.register(:pass, pass)
+  #
+  #   {:ok, client} = ExIRC.start_link!()
+  #   {:ok, %{state | :client => client, port: port, host: host}}
+  # end
 
   def connect do
     GenServer.cast(__MODULE__, :connect)
   end
 
-  def add_bot(bot) do
-    GenServer.cast(__MODULE__, {:add_bot, bot})
+  def add_handler(bot) do
+    GenServer.cast(__MODULE__, {:add_handler, bot})
   end
 
   def msg(cmd, channel, message) do
@@ -53,24 +63,39 @@ defmodule TwitchChat.TwitchHandler do
   end
 
   def handle_cast(:connect, state) do
-    ExIRC.Client.add_handler(state.client, self())
-    :ok = ExIRC.Client.connect_ssl!(state.client, state.host, state.port)
+    :ok = TwitchClient.connect(state.client, "irc.chat.twitch.tv", 6667)
+
     {:noreply, state}
   end
 
-  def handle_cast({:add_bot, bot}, state) do
-    {:noreply, %{state | :bot => bot}}
+  def handle_cast({:add_handler, handler}, state) do
+    handlers = Map.get(state, :handlers, [])
+    new_handlers = [handler | handlers]
+
+    {:noreply, %{state | :handlers => Enum.dedup(new_handlers)}}
   end
 
   def handle_cast({:join, channel}, state) do
-    ExIRC.Client.join(state.client, channel)
-    {:noreply, state}
+    case TwitchClient.join(state.client, channel) do
+      :ok ->
+        {:noreply, state}
+
+      {:error, reason} ->
+        Logger.error("Failed to join channel #{channel}: #{reason}")
+        {:stop, reason, state}
+    end
   end
 
   def handle_cast({:msg, cmd, channel, message}, state) do
-    if ExIRC.Client.is_logged_on?(state.client) do
-      ExIRC.Client.msg(state.client, cmd, channel, message)
-      {:noreply, state}
+    if TwitchClient.logged_on?(state.client) do
+      case TwitchClient.msg(state.client, cmd, channel, message) do
+        :ok ->
+          {:noreply, state}
+
+        {:error, reason} ->
+          Logger.error("Failed to send message to #{channel}: #{reason}")
+          {:noreply, state}
+      end
     else
       new_state = [{cmd, channel, message} | state.pending_messages]
 
@@ -79,12 +104,18 @@ defmodule TwitchChat.TwitchHandler do
   end
 
   def handle_cast({:logon, pass, nick}, state) do
-    ExIRC.Client.logon(state.client, pass, nick, nick, nick)
-    {:noreply, state}
+    case TwitchClient.logon(state.client, pass, nick) do
+      :ok ->
+        {:noreply, state}
+
+      {:error, reason} ->
+        Logger.error("Failed to logon: #{reason}")
+        {:noreply, state}
+    end
   end
 
   def handle_info({:joined, channel}, state) do
-    ExIRC.Client.cmd(
+    TwitchClient.cmd(
       state.client,
       "CAP REQ :twitch.tv/commands twitch.tv/tags twitch.tv/membership"
     )
@@ -92,7 +123,7 @@ defmodule TwitchChat.TwitchHandler do
     state.pending_messages
     |> Enum.reverse()
     |> Enum.each(fn {cmd, channel, message} ->
-      ExIRC.Client.msg(state.client, cmd, channel, message)
+      TwitchClient.msg(state.client, cmd, channel, message)
     end)
 
     broadcast({:joined, channel}, state)
@@ -100,8 +131,8 @@ defmodule TwitchChat.TwitchHandler do
     {:noreply, state}
   end
 
-  def handle_info({:unrecognized, _, %ExIRC.Message{args: [args]} = _msg}, state) do
-    [_, _cmdname | _rest] = String.split(args)
+  def handle_info({:unrecognized, _, %ExIRC.Message{} = message}, state) do
+    MessageParser.parse(message)
 
     {:noreply, state}
   end
@@ -115,10 +146,10 @@ defmodule TwitchChat.TwitchHandler do
   end
 
   defp broadcast(data, state) do
-    if state.bot do
-      Process.send(state.bot, data, [])
-    else
+    if Enum.empty?(state.handlers) do
       :ok
+    else
+      Enum.each(state.handlers, fn handler -> Process.send(handler, data, []) end)
     end
   end
 end

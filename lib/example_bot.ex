@@ -16,8 +16,8 @@ defmodule TwitchChat.ExampleBot do
   end
 
   def init(state) do
-    {:ok, _twitch_handler} = TwitchHandler.start_link(state.nick)
-    TwitchHandler.add_bot(self())
+    {:ok, _twitch_handler} = TwitchHandler.start_link()
+    TwitchHandler.add_handler(self())
     TwitchHandler.connect()
     {:ok, state}
   end

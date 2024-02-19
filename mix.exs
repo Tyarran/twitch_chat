@@ -28,10 +28,12 @@ defmodule TwitchChat.MixProject do
   def aliases do
     [
       quality: [
+        "compile --force --warnings-as-errors",
         "credo --strict",
         "sobelow -i XSS.Raw,Traversal --verbose --exit Low",
         "dialyzer",
-        "test"
+        "test",
+        "test.coverage"
       ]
     ]
   end
@@ -43,6 +45,7 @@ defmodule TwitchChat.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:dotenv, "~> 3.0.0"},
       {:exirc, "~> 2.0"},
+      {:hammox, "~> 0.7.0", only: :test},
       {:httpoison, "~> 2.0"},
       {:jason, "~> 1.4"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}

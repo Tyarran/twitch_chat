@@ -32,10 +32,10 @@ defmodule TwitchChat.Message do
   defstruct @enforce_keys
 
   @type t :: %__MODULE__{
-          args: list(String.t()),
+          args: list(String.t()) | nil,
           cmd: command(),
           host: String.t(),
           nick: String.t(),
-          tags: tags()
+          tags: tags() | nil
         }
 end
