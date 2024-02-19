@@ -32,8 +32,7 @@ defmodule TwitchChat.MixProject do
         "credo --strict",
         "sobelow -i XSS.Raw,Traversal --verbose --exit Low",
         "dialyzer",
-        "test",
-        "test.coverage"
+        "test --cover --force"
       ]
     ]
   end
