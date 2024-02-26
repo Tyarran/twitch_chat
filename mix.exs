@@ -13,7 +13,7 @@ defmodule TwitchChat.MixProject do
   end
 
   def cli do
-    [preferred_envs: [test: :test, quality: :test]]
+    [preferred_envs: [test: :test, quality: :test, "test.watch": :test]]
   end
 
   # Run "mix help compile.app" to learn about applications.
@@ -33,6 +33,9 @@ defmodule TwitchChat.MixProject do
         "sobelow -i XSS.Raw,Traversal --verbose --exit Low",
         "dialyzer",
         "test --cover --force"
+      ],
+      "test.watch": [
+        "cmd ./scripts/watch.sh"
       ]
     ]
   end
@@ -47,7 +50,8 @@ defmodule TwitchChat.MixProject do
       {:hammox, "~> 0.7.0", only: :test},
       {:httpoison, "~> 2.0"},
       {:jason, "~> 1.4"},
-      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:websockex, "~> 0.4.3"}
     ]
   end
 end

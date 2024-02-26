@@ -3,6 +3,7 @@ defmodule TwitchChat.Message do
     TwitchChat.Message
   """
 
+  alias TwitchChat.Args
   alias TwitchChat.Tags
 
   @type tags ::
@@ -14,6 +15,16 @@ defmodule TwitchChat.Message do
           | Tags.RoomstateTags.t()
           | Tags.UsernoticeTags.t()
           | Tags.WhisperTags.t()
+
+  @type args ::
+          Args.NoticeArgs.t()
+          | Args.PrivmsgArgs.t()
+          | Args.UserstateArgs.t()
+          | Args.ClearchatArgs.t()
+          | Args.NoticeArgs.t()
+          | Args.RoomstateArgs.t()
+          | Args.UsernoticeArgs.t()
+          | Args.WhisperArgs.t()
 
   @type command ::
           :clearchat
@@ -32,7 +43,7 @@ defmodule TwitchChat.Message do
   defstruct @enforce_keys
 
   @type t :: %__MODULE__{
-          args: list(String.t()) | nil,
+          args: args(),
           cmd: command(),
           host: String.t(),
           nick: String.t(),

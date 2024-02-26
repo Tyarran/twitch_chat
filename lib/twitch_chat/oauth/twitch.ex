@@ -6,18 +6,23 @@ defmodule TwitchChat.OAuth.Twitch do
   alias TwitchChat.OAuth.AuthCodeHandler
   alias TwitchChat.OAuth.Credentials
 
+  require Logger
+
   @behaviour TwitchChat.OAuth
 
   @impl true
   def get_credentials(client_id, client_secret) do
     case load_from_disk() do
       {:ok, credentials} ->
+        Logger.debug("Loaded credentials from disk")
         {:ok, credentials}
 
       {:error, :no_credentials} ->
+        Logger.debug("Get token")
         new_credentials(client_id, client_secret)
 
       {:expired_token, credentials} ->
+        Logger.debug("Refreshing token")
         refresh_token(credentials)
     end
   end

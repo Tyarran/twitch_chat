@@ -14,10 +14,7 @@ defmodule TwitchChat.MessageParser.ExIRCMessageParser do
     tags = read_tags(tag_string)
     [nick, host] = parse_host_info(host_info)
 
-    case parse(String.upcase(cmd), nick, host, args, tags) do
-      :invalid -> {:error, :invalid_message}
-      message -> {:ok, message}
-    end
+    parse(String.upcase(cmd), nick, host, args, tags)
   end
 
   def parse(%ExIRC.Message{} = message) do
@@ -51,61 +48,84 @@ defmodule TwitchChat.MessageParser.ExIRCMessageParser do
 
   defp read_field(key, value), do: {key, value}
 
+  @spec parse(String.t(), String.t(), String.t(), String.t(), map()) ::
+          {:ok, TwitchChat.Message.t()}
+          | {:error, {:not_supported, String.t()}}
+          | {:error, :invalid_message}
   defp parse("PRIVMSG", nick, host, raw_args, %{} = raw_tags) do
     tags = Tags.PrivmsgTags.new(raw_tags)
 
-    [channel, msg] = String.split(raw_args, " :", parts: 2)
-    args = %Args.PrivmsgArgs{channel: channel, message: msg}
+    case String.split(raw_args, " :", parts: 2) do
+      [channel, msg] ->
+        args = %Args.PrivmsgArgs{channel: channel, message: msg}
 
-    %Message{
-      tags: tags,
-      cmd: :privmsg,
-      args: args,
-      host: host,
-      nick: nick
-    }
+        {:ok,
+         %Message{
+           tags: tags,
+           cmd: :privmsg,
+           args: args,
+           host: host,
+           nick: nick
+         }}
+
+      _error ->
+        {:error, :invalid_message}
+    end
   end
 
   defp parse("CLEARCHAT", nick, host, raw_args, %{} = raw_tags) do
     tags = Tags.ClearchatTags.new(raw_tags)
 
-    [channel, user] = String.split(raw_args, " :", parts: 2)
-    args = %Args.ClearchatArgs{channel: channel, user: user}
+    case String.split(raw_args, " :", parts: 2) do
+      [channel, user] ->
+        args = %Args.ClearchatArgs{channel: channel, user: user}
 
-    %Message{
-      tags: tags,
-      cmd: :clearchat,
-      args: args,
-      host: host,
-      nick: nick
-    }
+        {:ok,
+         %Message{
+           tags: tags,
+           cmd: :clearchat,
+           args: args,
+           host: host,
+           nick: nick
+         }}
+
+      _error ->
+        {:error, :invalid_message}
+    end
   end
 
   defp parse("CLEARMSG", nick, host, raw_args, %{} = raw_tags) do
     tags = Tags.ClearmsgTags.new(raw_tags)
 
-    [channel, msg] = String.split(raw_args, " :", parts: 2)
-    args = %Args.ClearmsgArgs{channel: channel, message: msg}
+    case String.split(raw_args, " :", parts: 2) do
+      [channel, msg] ->
+        args = %Args.ClearmsgArgs{channel: channel, message: msg}
 
-    %Message{
-      tags: tags,
-      cmd: :clearmsg,
-      args: args,
-      host: host,
-      nick: nick
-    }
+        {:ok,
+         %Message{
+           tags: tags,
+           cmd: :clearmsg,
+           args: args,
+           host: host,
+           nick: nick
+         }}
+
+      _error ->
+        {:error, :invalid_message}
+    end
   end
 
   defp parse("GLOBALUSERSTATE", nick, host, _raw_args, %{} = raw_tags) do
     tags = Tags.GlobaluserstateTags.new(raw_tags)
 
-    %Message{
-      tags: tags,
-      cmd: :globaluserstate,
-      args: nil,
-      host: host,
-      nick: nick
-    }
+    {:ok,
+     %Message{
+       tags: tags,
+       cmd: :globaluserstate,
+       args: nil,
+       host: host,
+       nick: nick
+     }}
   end
 
   defp parse("HOSTTARGET", nick, host, raw_args, %{} = _raw_tags) do
@@ -124,97 +144,129 @@ defmodule TwitchChat.MessageParser.ExIRCMessageParser do
             channel: nil,
             number_of_viewers: String.to_integer(number_of_viewers)
           }
+
+        _error ->
+          :invalid
       end
 
-    %Message{
-      tags: nil,
-      cmd: :hosttarget,
-      args: args,
-      host: host,
-      nick: nick
-    }
+    if args == :invalid do
+      {:error, :invalid_message}
+    else
+      {:ok,
+       %Message{
+         tags: nil,
+         cmd: :hosttarget,
+         args: args,
+         host: host,
+         nick: nick
+       }}
+    end
   end
 
   defp parse("ROOMSTATE", nick, host, channel, %{} = raw_tags) do
     tags = Tags.RoomstateTags.new(raw_tags)
     args = %Args.RoomstateArgs{channel: channel}
 
-    %Message{
-      tags: tags,
-      cmd: :roomstate,
-      args: args,
-      host: host,
-      nick: nick
-    }
+    {:ok,
+     %Message{
+       tags: tags,
+       cmd: :roomstate,
+       args: args,
+       host: host,
+       nick: nick
+     }}
   end
 
   defp parse("RECONNECT", nick, host, _raw_args, %{} = _raw_tags) do
-    %Message{
-      tags: nil,
-      cmd: :reconnect,
-      args: nil,
-      host: host,
-      nick: nick
-    }
+    {:ok,
+     %Message{
+       tags: nil,
+       cmd: :reconnect,
+       args: nil,
+       host: host,
+       nick: nick
+     }}
   end
 
   defp parse("WHISPER", nick, host, raw_args, %{} = raw_tags) do
     tags = Tags.WhisperTags.new(raw_tags)
-    [from_user, message] = String.split(raw_args, " :", parts: 2)
-    args = %Args.WhisperArgs{from_user: from_user, to_user: nick, message: message}
 
-    %Message{
-      tags: tags,
-      cmd: :whisper,
-      args: args,
-      host: host,
-      nick: nick
-    }
+    case String.split(raw_args, " :", parts: 2) do
+      [from_user, message] ->
+        args = %Args.WhisperArgs{from_user: from_user, to_user: nick, message: message}
+
+        {:ok,
+         %Message{
+           tags: tags,
+           cmd: :whisper,
+           args: args,
+           host: host,
+           nick: nick
+         }}
+
+      _error ->
+        {:error, :invalid_message}
+    end
   end
 
   defp parse("USERSTATE", nick, host, channel, %{} = raw_tags) do
     tags = Tags.UserstateTags.new(raw_tags)
     args = %Args.UserstateArgs{channel: channel}
 
-    %Message{
-      tags: tags,
-      cmd: :userstate,
-      args: args,
-      host: host,
-      nick: nick
-    }
+    {:ok,
+     %Message{
+       tags: tags,
+       cmd: :userstate,
+       args: args,
+       host: host,
+       nick: nick
+     }}
   end
 
   defp parse("USERNOTICE", nick, host, raw_args, %{} = raw_tags) do
     tags = Tags.UsernoticeTags.new(raw_tags)
-    [channel, message] = String.split(raw_args, " :", parts: 2)
-    args = %Args.UsernoticeArgs{channel: channel, message: message}
 
-    %Message{
-      tags: tags,
-      cmd: :usernotice,
-      args: args,
-      host: host,
-      nick: nick
-    }
+    case String.split(raw_args, " :", parts: 2) do
+      [channel, message] ->
+        args = %Args.UsernoticeArgs{channel: channel, message: message}
+
+        {:ok,
+         %Message{
+           tags: tags,
+           cmd: :usernotice,
+           args: args,
+           host: host,
+           nick: nick
+         }}
+
+      _error ->
+        {:error, :invalid_message}
+    end
   end
 
   defp parse("NOTICE", nick, host, raw_args, %{} = raw_tags) do
     tags = Tags.NoticeTags.new(raw_tags)
-    [channel, message] = String.split(raw_args, " :", parts: 2)
-    args = %Args.NoticeArgs{channel: channel, message: message}
 
-    %Message{
-      tags: tags,
-      cmd: :notice,
-      args: args,
-      host: host,
-      nick: nick
-    }
+    case String.split(raw_args, " :", parts: 2) do
+      [channel, message] ->
+        args = %Args.NoticeArgs{channel: channel, message: message}
+
+        {:ok,
+         %Message{
+           tags: tags,
+           cmd: :notice,
+           args: args,
+           host: host,
+           nick: nick
+         }}
+
+      _error ->
+        {:error, :invalid_message}
+    end
   end
 
-  defp parse(_invalid, _nick, _host, _raw_args, _raw_tags) do
-    :invalid
+  defp parse(invalid_command, _nick, _host, _raw_args, _raw_tags) do
+    {:error, {:not_supported, invalid_command}}
   end
 
   defp parse_host_info(host_info) do

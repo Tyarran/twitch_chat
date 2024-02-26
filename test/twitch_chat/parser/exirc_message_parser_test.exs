@@ -440,6 +440,6 @@ defmodule TwitchChat.MessageParser.MessageParserTest do
 
     result = ExIRCMessageParser.parse(exirc_message)
 
-    assert result == {:error, :invalid_message}
+    assert result == {:error, {:not_supported, "INVALIDMESSAGE"}}
   end
 end
