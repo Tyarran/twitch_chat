@@ -31,8 +31,9 @@ defmodule TwitchChat.Client do
   @callback logon(client(), String.t(), String.t()) :: :ok | {:error, :not_connected}
   @callback join(client(), String.t()) :: :ok | {:error, atom()}
   @callback add_handler(client(), pid()) :: :ok
+  @callback cmd(client(), String.t()) :: :ok
 
-  def start_link() do
+  def start_link do
     get_impl().start_link()
   end
 

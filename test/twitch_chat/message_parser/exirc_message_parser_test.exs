@@ -1,4 +1,4 @@
-defmodule TwitchChat.MessageParser.MessageParserTest do
+defmodule TwitchChat.MessageParser.ExIRCMessageParserTest do
   use ExUnit.Case, async: true
 
   alias TwitchChat.Args

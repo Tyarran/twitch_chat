@@ -8,8 +8,7 @@
 #   alias TwitchChat.TwitchHandler
 #
 #   @client :fake_client
-#
-#   describe "TwitchHandler.init" do
+# describe "TwitchHandler.init" do
 #     test "initial" do
 #       state = %{handler: nil, client: nil, pending_messages: []}
 #
