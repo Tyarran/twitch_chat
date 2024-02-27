@@ -1,26 +1,24 @@
-defmodule TwitchChat.MessageParser.CommandParserTest do
+defmodule TwitchChat.MessageParser.ExIRCMessageParserTest do
   use ExUnit.Case, async: true
 
   alias TwitchChat.Args
   alias TwitchChat.Message
+  alias TwitchChat.Parser.ExIRCMessageParser
   alias TwitchChat.Tags
 
-  setup_all do
-    commands = TestUtils.load_test_data("commands.json")
+  test "Parse a PRIVMSG message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd:
+        "@badge-info=;badges=broadcaster/1,premium/1;client-nonce=0ee90d941b4964a2fdbcc5f34af0aef8;color=;display-name=tyarran;emotes=;first-msg=0;flags=;id=de217260-60f0-4ce0-86fb-8799c59ccec1;mod=0;returning-chatter=0;room-id=175715982;subscriber=0;tmi-sent-ts=1707758140401;turbo=0;user-id=175715982;user-type=",
+      args: ["tyarran!tyarran@tyarran.tmi.twitch.tv PRIVMSG #tyarran :Hello world!"]
+    }
 
-    {:ok, commands: commands}
-  end
-
-  test "Try to parse \"nil\" command" do
-    result = TwitchChat.Command.TwitchCommandParser.parse(nil)
-
-    assert result == {:error, :invalid_command}
-  end
-
-  test "Parse a PRIVMSG command", context do
-    command = context.commands["privmsg"]
-
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -63,10 +61,48 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a CLEARMSG command", context do
-    command = context.commands["clearmsg"]
+  test "Parse a CLEARCHAT message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "@room-id=12345678;target-user-id=87654321;tmi-sent-ts=1642715756806",
+      args: ["tmi.twitch.tv CLEARCHAT #dallas :ronni"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
+
+    assert result ==
+             {:ok,
+              %Message{
+                tags: %Tags.ClearchatTags{
+                  ban_duration: nil,
+                  room_id: "12345678",
+                  target_user_id: "87654321",
+                  tmi_sent_ts: "1642715756806"
+                },
+                cmd: :clearchat,
+                args: %Args.ClearchatArgs{channel: "#dallas", user: "ronni"},
+                host: "tmi.twitch.tv",
+                nick: nil
+              }}
+  end
+
+  test "parse a CLEARMSG message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd:
+        "@login=foo;room-id=;target-msg-id=94e6c7ff-bf98-4faa-af5d-7ad633a158a9;tmi-sent-ts=1642720582342",
+      args: ["tmi.twitch.tv CLEARMSG #bar :what a great day"]
+    }
+
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -87,31 +123,19 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a CLEARCHAT command", context do
-    command = context.commands["clearchat"]
+  test "parse a GLOBALUSERSTATE message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd:
+        "@badge-info=subscriber/8;badges=subscriber/6;color=#0D4200;display-name=dallas;emote-sets=0,33,50,237,793,2126,3517,4578,5569,9400,10337,12239;turbo=0;user-id=12345678;user-type=admin",
+      args: ["tmi.twitch.tv GLOBALUSERSTATE"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
-
-    assert result ==
-             {:ok,
-              %Message{
-                tags: %Tags.ClearchatTags{
-                  ban_duration: nil,
-                  room_id: "12345678",
-                  target_user_id: "87654321",
-                  tmi_sent_ts: "1642715756806"
-                },
-                cmd: :clearchat,
-                args: %Args.ClearchatArgs{channel: "#dallas", user: "ronni"},
-                host: "tmi.twitch.tv",
-                nick: nil
-              }}
-  end
-
-  test "Parse a GLOBALUSERSTATE command", context do
-    command = context.commands["globaluserstate"]
-
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -133,10 +157,18 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a HOSTTARGET command with channel arg", context do
-    command = context.commands["hosttarget_with_channel"]
+  test "parse a HOSTTARGET message with channel arg" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "",
+      args: ["tmi.twitch.tv HOSTTARGET #abc :xyz 10"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -153,10 +185,18 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a HOSTTARGET command without channel arg", context do
-    command = context.commands["hosttarget"]
+  test "parse a HOSTTARGET message without channel arg" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "",
+      args: ["tmi.twitch.tv HOSTTARGET #abc 10"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -173,10 +213,42 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a ROOMSTATE command", context do
-    command = context.commands["roomstate"]
+  test "parse a RECONNECT message" do
+    irc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "",
+      args: ["tmi.twitch.tv RECONNECT"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(irc_message)
+
+    assert result ==
+             {:ok,
+              %Message{
+                tags: nil,
+                cmd: :reconnect,
+                args: nil,
+                host: "tmi.twitch.tv",
+                nick: nil
+              }}
+  end
+
+  test "parse a ROOMSTATE message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "@emote-only=0;followers-only=-1;r9k=0;rituals=0;room-id=12345678;slow=0;subs-only=0",
+      args: ["tmi.twitch.tv ROOMSTATE #bar"]
+    }
+
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -198,26 +270,19 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a RECONNECT command", context do
-    command = context.commands["reconnect"]
+  test "parse a WHISPER message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd:
+        "@badges=staff/1,bits-charity/1;color=#8A2BE2;display-name=PetsgomOO;emotes=;message-id=306;thread-id=12345678_87654321;turbo=0;user-id=87654321;user-type=staff",
+      args: ["petsgomoo!petsgomoo@petsgomoo.tmi.twitch.tv WHISPER foo :hello world!"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
-
-    assert result ==
-             {:ok,
-              %Message{
-                tags: nil,
-                cmd: :reconnect,
-                args: nil,
-                host: "tmi.twitch.tv",
-                nick: nil
-              }}
-  end
-
-  test "Parse a WHISPER command", context do
-    command = context.commands["whisper"]
-
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -244,10 +309,19 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a USERSTATE command", context do
-    command = context.commands["userstate"]
+  test "parse a USERSTATE message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd:
+        "@badge-info=;badges=staff/1;color=#0D4200;display-name=ronni;emote-sets=0,33,50,237,793,2126,3517,4578,5569,9400,10337,12239;mod=1;subscriber=1;turbo=1;user-type=staff",
+      args: ["tmi.twitch.tv USERSTATE #dallas"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -273,10 +347,19 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a USERNOTICE command", context do
-    command = context.commands["usernotice"]
+  test "parse a USERNOTICE message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd:
+        "@badge-info=;badges=staff/1,broadcaster/1,turbo/1;color=#008000;display-name=ronni;emotes=;id=db25007f-7a18-43eb-9379-80131e44d633;login=ronni;mod=0;msg-id=resub;msg-param-cumulative-months=6;msg-param-streak-months=2;msg-param-should-share-streak=1;msg-param-sub-plan=Prime;msg-param-sub-plan-name=Prime;room-id=12345678;subscriber=1;system-msg=ronni\\shas\\ssubscribed\\sfor\\s6\\smonths!;tmi-sent-ts=1507246572675;turbo=1;user-id=87654321;user-type=staff",
+      args: ["tmi.twitch.tv USERNOTICE #dallas :Great stream -- keep it up!"]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -314,10 +397,18 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Parse a NOTICE command", context do
-    command = context.commands["notice"]
+  test "parse a NOTICE message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "@msg-id=whisper_restricted;target-user-id=12345678",
+      args: ["tmi.twitch.tv NOTICE #bar :The message from foo is now deleted."]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result ==
              {:ok,
@@ -336,11 +427,18 @@ defmodule TwitchChat.MessageParser.CommandParserTest do
               }}
   end
 
-  test "Try to parse an invalid command" do
-    invalid_command =
-      "@msg-id=whisper_restricted;target-user-id=12345678 :tmi.twitch.tv INVALIDMESSAGE #bar :This is an invalid message."
+  test "try to parse invalid message" do
+    exirc_message = %ExIRC.Message{
+      server: [],
+      nick: [],
+      user: [],
+      host: [],
+      ctcp: false,
+      cmd: "@msg-id=whisper_restricted;target-user-id=12345678",
+      args: ["tmi.twitch.tv INVALIDMESSAGE #bar :This is an invalid message."]
+    }
 
-    result = TwitchChat.Command.TwitchCommandParser.parse(invalid_command)
+    result = ExIRCMessageParser.parse(exirc_message)
 
     assert result == {:error, {:not_supported, "INVALIDMESSAGE"}}
   end

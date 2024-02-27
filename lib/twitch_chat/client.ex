@@ -57,6 +57,10 @@ defmodule TwitchChat.Client do
     get_impl().logon(client, pass, nick)
   end
 
+  def cmd(client, cmd) do
+    get_impl().cmd(client, cmd)
+  end
+
   defp get_impl do
     Application.get_env(:twitch_chat, :twitch_client, ExIRCClient)
   end

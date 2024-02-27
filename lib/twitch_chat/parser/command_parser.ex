@@ -1,14 +1,18 @@
-defmodule TwitchChat.Command.TwitchCommandParser do
-  alias TwitchChat.Tags
+defmodule TwitchChat.Parser.CommandParser do
+  @moduledoc """
+    Twitch command parser
+  """
   alias TwitchChat.Args
+  alias TwitchChat.Tags
 
-  @type parsing_error :: :invalid_command
+  @type parsing_error :: :invalid_command | {:not_supported, String.t()}
 
   @command_regex ~r/^(?:@(?<tags>[[:graph:]]* ))?:(?<command>.*)$/u
 
   def parse(command) when is_binary(command) do
-    with {:ok, parts} <- split_tags_command(command),
-         [{:ok, {cmd, args, host, nick}}, tags] <- parse_parts(parts) do
+    with {:ok, %{"tags" => tags_part, "command" => command_part}} <- split_tags_command(command),
+         {:ok, tags} <- parse_part("tags", tags_part),
+         {:ok, {cmd, args, host, nick}} <- parse_part("command", command_part) do
       {:ok,
        %TwitchChat.Message{
          cmd: cmd,
@@ -18,8 +22,7 @@ defmodule TwitchChat.Command.TwitchCommandParser do
          nick: nick
        }}
     else
-      [{:error, {:not_supported, _cmd}} = error, _] -> error
-      {:error, _reason} = error -> error
+      error -> error
     end
   end
 
@@ -35,35 +38,40 @@ defmodule TwitchChat.Command.TwitchCommandParser do
     end
   end
 
-  defp parse_parts(parts) do
-    Enum.map(parts, fn {key, part} ->
-      parse_part(key, String.trim(part))
-    end)
-  end
-
   defp parse_part("command", command_string) do
-    with [host_info, command_name | args] <- String.split(command_string, " ", parts: 3),
+    with [host_info, command_with_args] <- String.split(command_string, " ", parts: 2),
+         [command_name, args] <- split_command_args(String.trim(command_with_args)),
          [nick, host] <- parse_host_info(host_info),
-         {:ok, {cmd, args}} <- parse_command(command_name, List.first(args, ""), nick) do
+         {:ok, {cmd, args}} <- parse_command(command_name, args, nick) do
       {:ok, {cmd, args, host, nick}}
     else
-      {:not_supported, cmd} -> {:error, {:not_supported, cmd}}
-      :invalid_command -> {:error, :invalid_command}
+      error -> error
     end
   end
 
   defp parse_part("tags", "") do
-    nil
+    {:ok, nil}
   end
 
   defp parse_part("tags", tags_string) do
-    tags_string
-    |> String.split(";")
-    |> Enum.reduce(%{}, fn item, acc ->
-      [key, value] = String.split(item, "=", parts: 2)
-      {formated_key, formated_value} = read_field(key, value)
-      Map.put(acc, formated_key, formated_value)
-    end)
+    tags =
+      tags_string
+      |> String.split(";")
+      |> Enum.reduce(%{}, fn item, acc ->
+        [key, value] = String.split(item, "=", parts: 2)
+        {formated_key, formated_value} = read_field(key, value)
+        Map.put(acc, formated_key, formated_value)
+      end)
+
+    {:ok, tags}
+  end
+
+  defp split_command_args(command) do
+    case String.split(command, " ", parts: 2) do
+      [cmd] -> [cmd, ""]
+      [cmd, args] -> [cmd, args]
+      _error -> {:error, :invalid_command}
+    end
   end
 
   defp parse_command("PRIVMSG", args, _to_nick) do
@@ -73,7 +81,7 @@ defmodule TwitchChat.Command.TwitchCommandParser do
         {:ok, {:privmsg, args}}
 
       _error ->
-        :invalid_command
+        {:error, :invalid_command}
     end
   end
 
@@ -84,7 +92,7 @@ defmodule TwitchChat.Command.TwitchCommandParser do
         {:ok, {:clearchat, args}}
 
       _error ->
-        :invalid_command
+        {:error, :invalid_command}
     end
   end
 
@@ -95,7 +103,7 @@ defmodule TwitchChat.Command.TwitchCommandParser do
         {:ok, {:clearmsg, args}}
 
       _error ->
-        :invalid_command
+        {:error, :invalid_command}
     end
   end
 
@@ -104,30 +112,27 @@ defmodule TwitchChat.Command.TwitchCommandParser do
   end
 
   defp parse_command("HOSTTARGET", args, _to_nick) do
-    args =
-      case String.split(args, " ") do
-        ["#" <> hosting_channel, ":" <> channel, number_of_viewers] ->
-          %Args.HosttargetArgs{
-            hosting_channel: hosting_channel,
-            channel: channel,
-            number_of_viewers: String.to_integer(number_of_viewers)
-          }
+    case String.split(args, " ") do
+      ["#" <> hosting_channel, ":" <> channel, number_of_viewers] ->
+        args = %Args.HosttargetArgs{
+          hosting_channel: hosting_channel,
+          channel: channel,
+          number_of_viewers: String.to_integer(number_of_viewers)
+        }
 
-        ["#" <> hosting_channel, number_of_viewers] ->
-          %Args.HosttargetArgs{
-            hosting_channel: hosting_channel,
-            channel: nil,
-            number_of_viewers: String.to_integer(number_of_viewers)
-          }
+        {:ok, {:hosttarget, args}}
 
-        _error ->
-          :invalid
-      end
+      ["#" <> hosting_channel, number_of_viewers] ->
+        args = %Args.HosttargetArgs{
+          hosting_channel: hosting_channel,
+          channel: nil,
+          number_of_viewers: String.to_integer(number_of_viewers)
+        }
 
-    if args == :invalid do
-      :invalid_command
-    else
-      {:ok, {:hosttarget, args}}
+        {:ok, {:hosttarget, args}}
+
+      _error ->
+        {:error, :invalid_command}
     end
   end
 
@@ -146,7 +151,7 @@ defmodule TwitchChat.Command.TwitchCommandParser do
          {:whisper, %Args.WhisperArgs{from_user: from_user, to_user: to_nick, message: message}}}
 
       _error ->
-        :invalid_command
+        {:error, :invalid_command}
     end
   end
 
@@ -160,7 +165,7 @@ defmodule TwitchChat.Command.TwitchCommandParser do
         {:ok, {:usernotice, %Args.UsernoticeArgs{channel: channel, message: message}}}
 
       _error ->
-        :invalid_command
+        {:error, :invalid_command}
     end
   end
 
@@ -170,21 +175,30 @@ defmodule TwitchChat.Command.TwitchCommandParser do
         {:ok, {:notice, %Args.NoticeArgs{channel: channel, message: message}}}
 
       _error ->
-        :invalid_command
+        {:error, :invalid_command}
     end
   end
 
   defp parse_command(invalid, _args, _to_nick) do
-    {:not_supported, invalid}
+    {:error, {:not_supported, invalid}}
   end
 
   defp read_field("badges" = key, value), do: {key, String.split(value, ",")}
-  defp read_field(key, value), do: {key, String.replace(value, "\\s", " ")}
+
+  defp read_field(key, value) do
+    formated_value =
+      value
+      |> String.replace("\\s", " ")
+      |> String.trim()
+
+    {key, formated_value}
+  end
 
   defp parse_host_info(host_info) do
     case String.split(host_info, "!") do
       [host] -> [nil, host]
       [nick, host] -> [nick, host]
+      _invalid -> {:error, :invalid_command}
     end
   end
 

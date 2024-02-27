@@ -44,13 +44,11 @@ defmodule TwitchChat.Example.EchoBot do
   end
 
   def handle_info({:received, %Message{cmd: :privmsg} = message}, state) do
-    dbg(message)
     console("#{message.nick}: #{message.args.message}", &IO.ANSI.blue/0)
     {:noreply, state}
   end
 
-  def handle_info({:received, %Message{cmd: :roomstate} = message}, state) do
-    dbg(message)
+  def handle_info({:received, %Message{cmd: :roomstate}}, state) do
     {:noreply, state}
   end
 

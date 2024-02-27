@@ -2,11 +2,14 @@ defmodule TwitchChat.Client.ExIRCClient do
   @moduledoc """
     ExIRC client handler for Twitch chat
   """
-  alias TwitchChat.MessageParser
-
   use GenServer
 
   require Logger
+
+  alias TwitchChat.Client
+  alias TwitchChat.Parser
+
+  @behaviour TwitchChat.Client
 
   @ignored_commands ["002", "003", "004", "366", "375", "372", "376", "CAP"]
 
@@ -25,47 +28,60 @@ defmodule TwitchChat.Client.ExIRCClient do
     @type t :: %__MODULE__{
             handlers: [pid()],
             registry: pid(),
-            backend: Backend.backend(),
+            backend: Client.client(),
             pending_messages: [message()]
           }
   end
 
   # Client
 
+  @impl true
   def start_link do
     GenServer.start_link(__MODULE__, %State{})
   end
 
+  @impl true
   def connect(server, opts \\ [host: "irc.chat.twitch.tv", port: 6697]) do
     host = Keyword.get(opts, :host)
     port = Keyword.get(opts, :port)
     GenServer.cast(server, {:connect, host, port})
   end
 
+  @impl true
   def logon(server, pass, nick) do
     GenServer.cast(server, {:logon, pass, nick})
   end
 
+  @impl true
   def join(server, channel) do
     GenServer.cast(server, {:join, channel})
   end
 
+  @impl true
   def add_handler(server, handler) do
     GenServer.call(server, {:add_handler, handler})
   end
 
+  @impl true
+  def cmd(server, cmd) do
+    GenServer.cast(server, cmd)
+  end
+
   # Server
 
+  @impl true
   def init(state) do
     {:ok, backend} = ExIRC.Client.start_link()
     ExIRC.Client.add_handler(backend, self())
     {:ok, %{state | :backend => backend}}
   end
 
+  @impl true
   def handle_call({:add_handler, handler}, _from, state) do
     {:reply, :ok, %{state | :handlers => [handler | state.handlers]}}
   end
 
+  @impl true
   def handle_cast({:connect, host, port}, state) do
     Logger.debug("Connecting to Twitch")
     ExIRC.Client.connect_ssl!(state.backend, host, port)
@@ -79,11 +95,18 @@ defmodule TwitchChat.Client.ExIRCClient do
   end
 
   def handle_cast({:join, channel}, state) do
-    Logger.debug("Join channel #{channel}", module: __MODULE__)
+    Logger.debug("Join channel #{channel}")
     ExIRC.Client.join(state.backend, channel)
     {:noreply, state}
   end
 
+  def handle_cast({:cmd, cmd}, state) do
+    Logger.debug("Sending command: #{cmd}")
+    ExIRC.Client.cmd(state.backend, cmd)
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_info(:logged_in = data, state) do
     ExIRC.Client.cmd(
       state.backend,
@@ -100,7 +123,7 @@ defmodule TwitchChat.Client.ExIRCClient do
   end
 
   def handle_info({:unrecognized, _, %ExIRC.Message{} = message}, state) do
-    case MessageParser.parse(message) do
+    case Parser.parse(message) do
       {:ok, result} ->
         command =
           result.cmd

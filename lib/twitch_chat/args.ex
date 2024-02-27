@@ -127,4 +127,15 @@ defmodule TwitchChat.Args do
             message: String.t()
           }
   end
+
+  @type t ::
+          PrivmsgArgs.t()
+          | ClearchatArgs.t()
+          | ClearmsgArgs.t()
+          | HosttargetArgs.t()
+          | RoomstateArgs.t()
+          | WhisperArgs.t()
+          | UserstateArgs.t()
+          | UsernoticeArgs.t()
+          | NoticeArgs.t()
 end
