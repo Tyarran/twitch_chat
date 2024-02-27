@@ -11,18 +11,27 @@ defmodule TwitchChat.Example.EchoBot do
 
   # Client
 
-  def start_link(pass) do
-    Application.put_env(:twitch_chat, :pass, pass)
-    GenServer.start_link(__MODULE__, %{client: nil})
+  def start_link(client) do
+    Logger.info("Starting echo bot")
+    GenServer.start_link(__MODULE__, %{client: client})
   end
 
   # Server (callbacks)
 
   def init(state) do
-    {:ok, client} = Client.start_link()
-    :ok = Client.add_handler(client, self())
-    :ok = Client.connect(client)
-    {:ok, %{state | client: client}}
+    :ok = Client.add_handler(state.client, self())
+
+    if Client.connected?(state.client) do
+      Logger.info("Already connected")
+      {:ok, state}
+    else
+      Logger.info("Not connected, connecting")
+      :ok = Client.connect(state.client, host: "irc.chat.twitch.tv", port: 6697)
+      {:ok, state}
+    end
+
+    Logger.info("Echo bot is started")
+    {:ok, state}
   end
 
   def handle_info({:connected, server, port}, state) do
@@ -48,7 +57,15 @@ defmodule TwitchChat.Example.EchoBot do
     {:noreply, state}
   end
 
-  def handle_info({:received, %Message{cmd: :roomstate}}, state) do
+  def handle_info({:received, %Message{cmd: :roomstate} = message}, state) do
+    console("roomstate : #{message.args.channel}", &IO.ANSI.yellow/0)
+    console("#{inspect(message.tags)}", &IO.ANSI.yellow/0)
+    {:noreply, state}
+  end
+
+  def handle_info({:received, %Message{cmd: :userstate} = message}, state) do
+    console("userstate : #{message.args.channel}", &IO.ANSI.yellow/0)
+    console("#{inspect(message.tags)}", &IO.ANSI.yellow/0)
     {:noreply, state}
   end
 

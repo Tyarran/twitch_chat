@@ -48,6 +48,11 @@ defmodule TwitchChat.Client.ExIRCClient do
   end
 
   @impl true
+  def connected?(server) do
+    GenServer.call(server, :connected?)
+  end
+
+  @impl true
   def logon(server, pass, nick) do
     GenServer.cast(server, {:logon, pass, nick})
   end
@@ -79,6 +84,12 @@ defmodule TwitchChat.Client.ExIRCClient do
   @impl true
   def handle_call({:add_handler, handler}, _from, state) do
     {:reply, :ok, %{state | :handlers => [handler | state.handlers]}}
+  end
+
+  @impl true
+  def handle_call(:connected?, _from, state) do
+    result = ExIRC.Client.is_connected?(state.backend)
+    {:reply, result, state}
   end
 
   @impl true

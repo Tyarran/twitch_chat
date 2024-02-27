@@ -28,6 +28,7 @@ defmodule TwitchChat.Client do
 
   @callback start_link() :: GenServer.on_start()
   @callback connect(client(), host: String.t(), port: integer()) :: :ok
+  @callback connected?(client()) :: boolean()
   @callback logon(client(), String.t(), String.t()) :: :ok | {:error, :not_connected}
   @callback join(client(), String.t()) :: :ok | {:error, atom()}
   @callback add_handler(client(), pid()) :: :ok
@@ -47,6 +48,10 @@ defmodule TwitchChat.Client do
     else
       get_impl().connect(client, opts)
     end
+  end
+
+  def connected?(client) do
+    get_impl().connected?(client)
   end
 
   def join(client, channel) do
