@@ -88,7 +88,7 @@ defmodule TwitchChat.OAuth.AuthCodeHandler do
 
   defp fetch_auth_code(client_id, port) do
     System.cmd("xdg-open", [
-      "https://id.twitch.tv/oauth2/authorize?client_id=#{client_id}&redirect_uri=http://localhost:3000&response_type=code&scope=chat:read chat:edit&grant_type=client_credentials"
+      "https://id.twitch.tv/oauth2/authorize?client_id=#{client_id}&redirect_uri=http://localhost:3000&response_type=code&scope=chat:read chat:edit channel:moderate channel_commercial channel_editor whispers:edit&grant_type=client_credentials"
     ])
 
     HTTPoison.request(%HTTPoison.Request{
@@ -98,7 +98,8 @@ defmodule TwitchChat.OAuth.AuthCodeHandler do
         "client_id" => client_id,
         "redirect_uri" => "http://localhost:" <> Integer.to_string(port),
         "response_type" => "code",
-        "scope" => "chat:read"
+        "scope" =>
+          "chat:read chat:edit channel:moderate channel_commercial channel_editor whispers:edit"
       },
       options: [follow_redirect: true]
     })

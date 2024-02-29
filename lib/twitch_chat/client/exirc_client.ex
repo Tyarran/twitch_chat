@@ -7,7 +7,7 @@ defmodule TwitchChat.Client.ExIRCClient do
   require Logger
 
   alias TwitchChat.Client
-  alias TwitchChat.Parser
+  alias TwitchChat.Message
 
   @behaviour TwitchChat.Client
 
@@ -69,7 +69,7 @@ defmodule TwitchChat.Client.ExIRCClient do
 
   @impl true
   def cmd(server, cmd) do
-    GenServer.cast(server, cmd)
+    GenServer.cast(server, {:cmd, cmd})
   end
 
   # Server
@@ -113,7 +113,9 @@ defmodule TwitchChat.Client.ExIRCClient do
 
   def handle_cast({:cmd, cmd}, state) do
     Logger.debug("Sending command: #{cmd}")
-    ExIRC.Client.cmd(state.backend, cmd)
+    # ExIRC.Client.msg(
+    # ExIRC.Client.msg(state.backend, :privmsg, "#tyarran", "/clear")
+    ExIRC.Client.cmd(state.backend, "PRIVMSG #tyarran :/clear #tyarran")
     {:noreply, state}
   end
 
@@ -134,10 +136,10 @@ defmodule TwitchChat.Client.ExIRCClient do
   end
 
   def handle_info({:unrecognized, _, %ExIRC.Message{} = message}, state) do
-    case Parser.parse(message) do
+    case Message.parse(message) do
       {:ok, result} ->
         command =
-          result.cmd
+          elem(result, 0)
           |> Atom.to_string()
           |> String.upcase()
 

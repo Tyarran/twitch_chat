@@ -4,25 +4,25 @@ defmodule TwitchChat.Client do
   """
   alias TwitchChat.Client.ExIRCClient
 
-  defmodule Sender do
-    @moduledoc """
-      Sender
-    """
-    @enforce_keys [:nick, :host]
-    defstruct @enforce_keys
-
-    @type t :: %__MODULE__{
-            nick: String.t(),
-            host: String.t()
-          }
-  end
+  # defmodule Sender do
+  #   @moduledoc """
+  #     Sender
+  #   """
+  #   @enforce_keys [:nick, :host]
+  #   defstruct @enforce_keys
+  #
+  #   @type t :: %__MODULE__{
+  #           nick: String.t(),
+  #           host: String.t()
+  #         }
+  # end
 
   @type client :: pid()
   @type event ::
           :connected
           | :logged_in
           | {:joined, String.t()}
-          | {:joined, String.t(), Sender.t()}
+          | {:joined, String.t(), String.t()}
           | {:parted, String.t()}
           | {:received, TwitchChat.Message.t()}
 

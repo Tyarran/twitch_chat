@@ -1,4 +1,4 @@
-defmodule TwitchChat.Example.EchoBot do
+defmodule TwitchChat.Examples.EchoBot do
   @moduledoc """
     Example echo bot using TwitchChat.Client
   """
@@ -7,13 +7,22 @@ defmodule TwitchChat.Example.EchoBot do
   require Logger
 
   alias TwitchChat.Client
-  alias TwitchChat.Message
 
   # Client
 
   def start_link(client) do
     Logger.info("Starting echo bot")
-    GenServer.start_link(__MODULE__, %{client: client})
+    GenServer.start_link(__MODULE__, %{client: client}, name: __MODULE__)
+  end
+
+  def clear(channel) do
+    command = TwitchChat.Command.clear(channel)
+    GenServer.cast(__MODULE__, {:send_command, command})
+  end
+
+  def help(channel) do
+    command = TwitchChat.Command.help(channel)
+    GenServer.cast(__MODULE__, {:send_command, command})
   end
 
   # Server (callbacks)
@@ -34,10 +43,16 @@ defmodule TwitchChat.Example.EchoBot do
     {:ok, state}
   end
 
+  def handle_cast({:send_command, command}, state) do
+    Logger.info("Sending command: #{command}")
+    :ok = Client.cmd(state.client, command)
+    {:noreply, state}
+  end
+
   def handle_info({:connected, server, port}, state) do
     Logger.info("connected to #{server}:#{port}")
     pass = Application.get_env(:twitch_chat, :pass)
-    :ok = Client.logon(state.client, pass, "tyarran")
+    :ok = Client.logon(state.client, pass, "jeanmichelchatbot")
     {:noreply, state}
   end
 
@@ -52,20 +67,31 @@ defmodule TwitchChat.Example.EchoBot do
     {:noreply, state}
   end
 
-  def handle_info({:received, %Message{cmd: :privmsg} = message}, state) do
-    console("#{message.nick}: #{message.args.message}", &IO.ANSI.blue/0)
+  def handle_info({:received, {:privmsg, _channel, _msg, _nick, tags}}, state) do
+    msg_id = tags["id"]
+    cmd = "@reply-parent-msg-id=#{msg_id} PRIVMSG #tyarran :Bien le bonjour !"
+
+    Client.cmd(state.client, cmd)
+
     {:noreply, state}
   end
 
-  def handle_info({:received, %Message{cmd: :roomstate} = message}, state) do
-    console("roomstate : #{message.args.channel}", &IO.ANSI.yellow/0)
-    console("#{inspect(message.tags)}", &IO.ANSI.yellow/0)
+  def handle_info({:received, {:userstate, channel, tags}}, state) do
+    console("userstate : #{channel}", &IO.ANSI.yellow/0)
+    console("#{inspect(tags)}", &IO.ANSI.yellow/0)
     {:noreply, state}
   end
 
-  def handle_info({:received, %Message{cmd: :userstate} = message}, state) do
-    console("userstate : #{message.args.channel}", &IO.ANSI.yellow/0)
-    console("#{inspect(message.tags)}", &IO.ANSI.yellow/0)
+  def handle_info({:received, message}, state) do
+    tags = elem(message, tuple_size(message) - 1)
+    msg = Tuple.delete_at(message, tuple_size(message) - 1)
+
+    if is_map(tags) do
+      console("received: #{inspect(msg)} with tags: #{inspect(tags)}", &IO.ANSI.green/0)
+    else
+      console("received: #{inspect(msg)}", &IO.ANSI.green/0)
+    end
+
     {:noreply, state}
   end
 

@@ -3,50 +3,28 @@ defmodule TwitchChat.Message do
     TwitchChat.Message
   """
 
-  alias TwitchChat.Args
-  alias TwitchChat.Tags
+  alias TwitchChat.Message.MessageParser
 
-  @type tags ::
-          Tags.NoticeTags.t()
-          | Tags.PrivmsgTags.t()
-          | Tags.UserstateTags.t()
-          | Tags.ClearchatTags.t()
-          | Tags.NoticeTags.t()
-          | Tags.RoomstateTags.t()
-          | Tags.UsernoticeTags.t()
-          | Tags.WhisperTags.t()
+  @type t ::
+          :reconnect
+          | {:clearchat, String.t(), String.t(), map()}
+          | {:clearchat, String.t(), map()}
+          | {:clearmsg, String.t(), String.t(), map()}
+          | {:globaluserstate, map()}
+          | {:hosttarget, String.t(), String.t(), non_neg_integer()}
+          | {:hosttarget, String.t(), non_neg_integer()}
+          | {:notice, String.t(), String.t(), map()}
+          | {:privmsg, String.t(), String.t(), String.t(), map()}
+          | {:roomstate, String.t(), map()}
+          | {:usernotice, String.t(), String.t(), map()}
+          | {:userstate, String.t(), map()}
+          | {:whisper, String.t(), String.t(), String.t(), map()}
 
-  @type args ::
-          Args.NoticeArgs.t()
-          | Args.PrivmsgArgs.t()
-          | Args.UserstateArgs.t()
-          | Args.ClearchatArgs.t()
-          | Args.NoticeArgs.t()
-          | Args.RoomstateArgs.t()
-          | Args.UsernoticeArgs.t()
-          | Args.WhisperArgs.t()
+  @callback parse(String.t()) :: {:ok, t()} | {:error, atom()}
 
-  @type command ::
-          :clearchat
-          | :clearmsg
-          | :globaluserstate
-          | :hosttarget
-          | :notice
-          | :privmsg
-          | :reconnect
-          | :roomstate
-          | :usernotice
-          | :userstate
-          | :whisper
-
-  @enforce_keys [:tags, :cmd, :args, :host, :nick]
-  defstruct @enforce_keys
-
-  @type t :: %__MODULE__{
-          args: args(),
-          cmd: command(),
-          host: String.t(),
-          nick: String.t(),
-          tags: tags() | nil
-        }
+  def parse(%ExIRC.Message{args: [args], cmd: tag_string}) do
+    command = String.trim(tag_string <> " :" <> args)
+    impl = Application.get_env(:twitch_chat, :twitch_message, MessageParser)
+    impl.parse(command)
+  end
 end

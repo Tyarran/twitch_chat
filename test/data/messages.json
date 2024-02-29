@@ -1,6 +1,7 @@
 {
   "privmsg": "@badge-info=;badges=broadcaster/1,premium/1;client-nonce=0ee90d941b4964a2fdbcc5f34af0aef8;color=;display-name=tyarran;emotes=;first-msg=0;flags=;id=de217260-60f0-4ce0-86fb-8799c59ccec1;mod=0;returning-chatter=0;room-id=175715982;subscriber=0;tmi-sent-ts=1707758140401;turbo=0;user-id=175715982;user-type= :tyarran!tyarran@tyarran.tmi.twitch.tv PRIVMSG #tyarran :Hello world!\r\n",
   "clearchat": "@room-id=12345678;target-user-id=87654321;tmi-sent-ts=1642715756806 :tmi.twitch.tv CLEARCHAT #dallas :ronni",
+  "clearchat_all": "@room-id=175715982;tmi-sent-ts=1709077071468 :tmi.twitch.tv CLEARCHAT #tyarran",
   "clearmsg": "@login=foo;room-id=;target-msg-id=94e6c7ff-bf98-4faa-af5d-7ad633a158a9;tmi-sent-ts=1642720582342 :tmi.twitch.tv CLEARMSG #bar :what a great day",
   "globaluserstate": "@badge-info=subscriber/8;badges=subscriber/6;color=#0D4200;display-name=dallas;emote-sets=0,33,50,237,793,2126,3517,4578,5569,9400,10337,12239;turbo=0;user-id=12345678;user-type=admin :tmi.twitch.tv GLOBALUSERSTATE",
   "hosttarget_with_channel": ":tmi.twitch.tv HOSTTARGET #abc :xyz 10",

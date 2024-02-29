@@ -1,8 +1,10 @@
-defmodule TwitchChat.Example.BotSupervisor do
+defmodule TwitchChat.Examples.BotSupervisor do
   @moduledoc """
     Example bot supervisor
   """
   use Supervisor
+
+  alias TwitchChat.OAuth.AuthCodeHandler
 
   def start_link(_init_args) do
     Supervisor.start_link(__MODULE__, nil, name: __MODULE__)
@@ -10,6 +12,7 @@ defmodule TwitchChat.Example.BotSupervisor do
 
   def init(_init_args) do
     {:ok, client} = TwitchChat.Client.start_link()
+    {:ok, _pid} = AuthCodeHandler.start_link(nil)
 
     client_id = Application.fetch_env!(:twitch_chat, :client_id)
     client_secret = Application.fetch_env!(:twitch_chat, :client_secret)
